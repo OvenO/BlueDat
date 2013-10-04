@@ -1,0 +1,28 @@
+#500 steps of the interaction amplitude
+50 steps of the interaction amplitude
+0.0 starting point of interaction amplitude
+5.0 stoping point of interaction amplitude
+1.0 wave number (nondimensionalizes the position variable)
+1.0 driving frequency (nondimensionaliz the time)
+0.1 damping
+0.05 time step (though odeint uses much smaller but only stors this)
+
+30 cycles runtime
+#300 cycles runtime
+
+# dimesions of the block
+6.28 in x
+3.0 in x velocity
+
+# botom left hand corner of block
+-1.5 initial velocity in x
+0.0 initial velocity in y
+0.0 initial position in x
+1.0 initial position in y
+
+# number of point in each direction
+#60 in x
+#30 in y
+6 in x
+3 in y
+

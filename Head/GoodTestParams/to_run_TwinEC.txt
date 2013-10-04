@@ -1,0 +1,31 @@
+10 steps of the interaction amplitude
+0.50 starting point of interaction amplitude
+3.0 stoping point of interaction amplitude
+0.5 damping
+1.0 dimensionless distance between twin EC (as of right now this just gets set to 2*pl.pi)
+0.05 time step (though odeint uses much smaller but only stors this)
+
+#300 cycles runtime
+12 cycles runtime
+
+# dimesions of the block
+6.28 in x
+6.0 in y 
+0.0 in vx
+0.0 in vy
+
+# botom left hand corner of block
+0.0 initial velocity in x
+0.0 initial velocity in y
+0.0 initial position in x
+0.1 initial position in y
+
+# number of point in each direction
+20 in x
+20 in y
+0 in vx
+0 in vy
+
+# Poincare section or full trajectories? (Full or Poin)
+Full
+# Poin
