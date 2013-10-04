@@ -1,0 +1,14 @@
+Info 
+ coefficient: 0.21
+wave number: 1.0
+omega: 1.0
+damping: 0.1
+g: 0.1
+time step: 0.001
+total time: 500.0
+total iterations: 500000
+Initial Conditions: 
+initial x: 3.4653
+initial y: 1.0
+initial vx: -0.0242
+initial vy: 0.0
