@@ -4,7 +4,345 @@ import argparse
 from datetime import datetime
 import time as thetime
 import paramiko
+import random
 
+class Sin2D(object):
+    # N -> number of particles
+    # number_of -> number of blocks (usualy 500). i.e. how many steps
+    # start -> parameter starting poin. 
+    # stop -> parameter stoping point (step size will be calculated). 
+    # cycles-> runtime cycles. 
+    # num_cell -> number of unit cells to make simulation length over
+    # qq -> intercharge force
+    # d -> length of system as determined by the num_cell
+    # A -> this is the interaction amplitude with the EC fild. It is an array so
+    # that each particle may have its own interaction with the field
+    def __init__(self):
+        self.block_dir = ''
+        self.var = 'A'
+        self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin2D/'
+        self.number_of = 6
+        self.start     = 0.1
+        self.stop      = 1.1
+        self.dt        = 0.05
+        self.cycles    = 80
+        self.N = 100
+        self.qq = 0.00001
+        self.beta = .6
+        self.x_num_cell = 10.0
+        self.y_num_cell = 10.0
+        self.x_periodic = True
+        self.order = 2
+        self.dx = self.x_num_cell * 2.0 * pl.pi
+        self.dy = self.y_num_cell * 2.0 * pl.pi
+        self.A = pl.zeros(2*self.N) +.5
+
+        # Full trajectory or just Poincare sections
+        self.sliced = False
+        #self.sliced = True
+
+    def init_block(self):
+
+        # find the amount we want to increase the parameter by
+        inc_param = (self.stop-self.start)/self.number_of
+    
+        cur_var = self.start 
+    
+        get_make_dir(self)
+        
+        # make info file
+        info_file = open(self.block_dir + '/info.txt','w')
+        info_file.write('dir: '+str(self.block_dir)+'\nsurf: 1.0') 
+        info_file.write('\ndt: '+str(self.dt))
+        if self.var == 'beta':
+            info_file.write('\nbeta (damping): sweep variable')
+        else:
+            info_file.write('\nbeta (damping): '+str(self.beta))
+        if self.var == 'cycles': 
+            info_file.write('\ncycles (run time): sweep variable')
+        else: 
+            info_file.write('\ncycles (run time): '+str(self.cycles))
+        if self.var == 'N': 
+            info_file.write('\nN (particle number): sweep variable')
+        else: 
+            info_file.write('\nN (particle number): '+str(self.N))
+        if self.var == 'qq': 
+            info_file.write('\nqq (particle interaction strength): sweep variable')
+        else:
+            info_file.write('\nqq (particle interaction strength): '+str(self.qq))
+        if self.var == 'x_num_cell':
+            info_file.write('\nx_num_cell (system length in x): sweep variable')
+        else:
+            info_file.write('\nx_num_cell (system length in x): '+str(self.x_num_cell))
+        if self.var == 'y_num_cell':
+            info_file.write('\ny_num_cell (system length): sweep variable')
+        else:
+            info_file.write('\ny_num_cell (system length): '+str(self.y_num_cell))
+        if self.var == 'x_periodic':
+            info_file.write('\nx_periodic (peridic in x?): sweep variable')
+        else:
+            info_file.write('\nx_periodic (peridic in x?): '+str(self.x_periodic))
+        if self.var == 'order':
+            info_file.write('\norder (order of periodic wrap force): sweep variable')
+        else:
+            info_file.write('\norder (order of periodic wrap force): '+str(self.order))
+        if self.var == 'A': 
+            info_file.write('\nA (interaction amplitude): sweep variable')
+        else: 
+            if type(A)==float: 
+                info_file.write('\nA (interaction amplitude): '+str(self.A))
+            else: 
+                info_file.write('\nA (interaction amplitude): '+str(min(self.A))+'-'+str(max(self.A)))
+        info_file.close()
+
+        for l in range(self.number_of):
+            self.x0 = pl.zeros([4*self.N])
+            
+            for i,j in enumerate(self.x0):
+                if i in range(2*self.N,3*self.N):
+                    self.x0[i] = random.random()*self.dx
+                if i in range(3*self.N,4*self.N):
+                    self.x0[i] = random.random()*self.dy
+
+            #make the file
+            cur_poin_file = open(self.block_dir+'/'+str(l)+'poindat.txt','w')
+    
+            #write the first few lines of the file
+            cur_poin_file.write(str(self.var)+' --> ' +str(cur_var)+'\n')
+            
+            # this just prints the numbers with one space imbetween. the .replace gets rid of the \n
+            # but i'm still not really sure why they are there in the first place.
+            cur_poin_file.write(str(self.x0)[1:-1].replace('\n',''))
+            cur_poin_file.write('\n')
+            
+            cur_poin_file.close()
+            cur_var += inc_param
+
+        # now that all the file are made make an "Orig" directory in the block directory to store
+        # the origonal blocks of initial conditions. This way if something goes wrong we can pull
+        # them out and run again.py again by hand
+        os.mkdir(self.block_dir + '/Orig')
+        os.system('cp ' + self.block_dir +'/*.txt ' + self.block_dir + '/Orig/')
+        os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/2DBlock/Old/')
+        print 'self.block_dir'
+        print self.block_dir
+
+
+class Sin1D(object):
+    # N -> number of particles
+    # number_of -> number of blocks (usualy 500). i.e. how many steps
+    # start -> parameter starting poin. 
+    # stop -> parameter stoping point (step size will be calculated). 
+    # cycles-> runtime cycles. 
+    # num_cell -> number of unit cells to make simulation length over
+    # qq -> intercharge force
+    # d -> length of system as determined by the num_cell
+    # A -> this is the interaction amplitude with the EC fild. It is an array so
+    # that each particle may have its own interaction with the field
+    def __init__(self):
+        self.block_dir = ''
+        self.var = 'A'
+        self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
+        self.number_of = 6
+        self.start     = 0.1
+        self.stop      = 1.1
+        self.dt        = 0.05
+        self.cycles    = 80
+        self.N = 100
+        self.qq = .00001
+        self.beta = .6
+        self.num_cell = 1000.0
+        self.d = self.num_cell * 2.0 * pl.pi
+        self.A = pl.zeros(2*self.N) +.5
+
+        # Full trajectory or just Poincare sections
+        self.sliced = False
+        #self.sliced = True
+
+    def init_block(self):
+
+        # find the amount we want to increase the parameter by
+        inc_param = (self.stop-self.start)/self.number_of
+    
+        cur_var = self.start
+    
+        get_make_dir(self)
+        
+        # make info file
+        info_file = open(self.block_dir + '/info.txt','w')
+        info_file.write('dir: '+str(self.block_dir)+'\nsurf: 1.0') 
+        info_file.write('\ndt: '+str(self.dt))
+        if self.var == 'beta':
+            info_file.write('\nbeta (damping): sweep variable')
+        else:
+            info_file.write('\nbeta (damping): '+str(self.beta))
+        if self.var == 'cycles': 
+            info_file.write('\ncycles (run time): sweep variable')
+        else: 
+            info_file.write('\ncycles (run time): '+str(self.cycles))
+        if self.var == 'N': 
+            info_file.write('\nN (particle number): sweep variable')
+        else: 
+            info_file.write('\nN (particle number): '+str(self.N))
+        if self.var == 'qq': 
+            info_file.write('\nqq (particle interaction strength): sweep variable')
+        else:
+            info_file.write('\nqq (particle interaction strength): '+str(self.qq))
+        if self.var == 'num_cell':
+            info_file.write('\nnum_cell (system length): sweep variable')
+        else:
+            info_file.write('\nnum_cell (system length): '+str(self.num_cell))
+        if self.var == 'A': 
+            info_file.write('\nA (interaction amplitude): sweep variable')
+        else: 
+            if type(A)==float: 
+                info_file.write('\nA (interaction amplitude): '+str(self.A))
+            else: 
+                info_file.write('\nA (interaction amplitude): '+str(min(self.A))+'-'+str(max(self.A)))
+        info_file.close()
+
+        for l in range(self.number_of):
+            self.x0 = pl.zeros([2*self.N])
+            
+            for i,j in enumerate(self.x0):
+                if i in range(self.N,2*self.N):
+                    print(i)
+                    self.x0[i] = random.random()*self.d
+                    continue
+
+            #make the file
+            cur_poin_file = open(self.block_dir+'/'+str(l)+'poindat.txt','w')
+    
+            #write the first few lines of the file
+            cur_poin_file.write(str(self.var)+' --> ' +str(cur_var)+'\n')
+            
+            # this just prints the numbers with one space imbetween. the .replace gets rid of the \n
+            # but i'm still not really sure why they are there in the first place.
+            cur_poin_file.write(str(self.x0)[1:-1].replace('\n',''))
+            cur_poin_file.write('\n')
+            
+            cur_poin_file.close()
+            cur_var += inc_param
+
+        # now that all the file are made make an "Orig" directory in the block directory to store
+        # the origonal blocks of initial conditions. This way if something goes wrong we can pull
+        # them out and run again.py again by hand
+        os.mkdir(self.block_dir + '/Orig')
+        os.system('cp ' + self.block_dir +'/*.txt ' + self.block_dir + '/Orig/')
+        os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/2DBlock/Old/')
+        print 'self.block_dir'
+        print self.block_dir
+
+class MB1DEC(object):
+    # N -> number of particles
+    # number_of -> number of blocks (usualy 500). i.e. how many steps
+    # start -> parameter starting poin. 
+    # stop -> parameter stoping point (step size will be calculated). 
+    # cycles-> runtime cycles. 
+    # num_cell -> number of unit cells to make simulation length over
+    # qq -> intercharge force
+    # d -> length of system as determined by the num_cell
+    # A -> this is the interaction amplitude with the EC fild. It is an array so
+    # that each particle may have its own interaction with the field
+    def __init__(self):
+        self.block_dir = ''
+        self.var = 'A'
+        self.script_dir= '/users/o/m/omyers/datasphere/ECproject/MB1DEC/'
+        self.number_of = 300
+        self.start     = 0.5
+        self.stop      = 2.0
+        self.dt        = 0.05
+        self.cycles    = 120
+        self.N = 20
+        self.qq = .01
+        self.beta = .6
+        self.num_cell = 3.0
+        self.d = self.num_cell * 2.0 * pl.pi
+        self.A = pl.zeros(2*self.N) + .5
+
+        # Full trajectory or just Poincare sections
+        #self.sliced = False
+        self.sliced = True
+
+    
+    def init_block(self):
+
+        # find the amount we want to increase the parameter by
+        inc_param = (self.stop-self.start)/self.number_of
+    
+        cur_var = self.start + inc_param
+    
+        get_make_dir(self)
+        
+        # make info file
+        info_file = open(self.block_dir + '/info.txt','w')
+        info_file.write('dir: '+str(self.block_dir)+'\nsurf: 1.0') 
+        info_file.write('\ndt: '+str(self.dt))
+        if self.var == 'beta':
+            info_file.write('\nbeta (damping): sweep variable')
+        else:
+            info_file.write('\nbeta (damping): '+str(self.beta))
+        if self.var == 'cycles': 
+            info_file.write('\ncycles (run time): sweep variable')
+        else: 
+            info_file.write('\ncycles (run time): '+str(self.cycles))
+        if self.var == 'N': 
+            info_file.write('\nN (particle number): sweep variable')
+        else: 
+            info_file.write('\nN (particle number): '+str(self.N))
+        if self.var == 'qq': 
+            info_file.write('\nqq (particle interaction strength): sweep variable')
+        else:
+            info_file.write('\nqq (particle interaction strength): '+str(self.qq))
+        if self.var == 'num_cell':
+            info_file.write('\nnum_cell (system length): sweep variable')
+        else:
+            info_file.write('\nnum_cell (system length): '+str(self.num_cell))
+        if self.var == 'A': 
+            info_file.write('\nA (interaction amplitude): sweep variable')
+        else: 
+            if type(A)==float: 
+                info_file.write('\nA (interaction amplitude): '+str(self.A))
+            else: 
+                info_file.write('\nA (interaction amplitude): '+str(min(self.A))+'-'+str(max(self.A)))
+        info_file.close()
+
+        for l in range(self.number_of):
+            self.x0 = pl.zeros([2*self.N])
+            
+            for i,j in enumerate(self.x0):
+                if i in range(self.N,2*self.N):
+                    print(i)
+                    self.x0[i] = random.random()*self.d
+                    continue
+
+            #make the file
+            cur_poin_file = open(self.block_dir+'/'+str(l)+'poindat.txt','w')
+    
+            #write the first few lines of the file
+            cur_poin_file.write(str(self.var)+' --> ' +str(cur_var)+'\n')
+            
+            # this just prints the numbers with one space imbetween. the .replace gets rid of the \n
+            # but i'm still not really sure why they are there in the first place.
+            cur_poin_file.write(str(self.x0)[1:-1].replace('\n',''))
+            cur_poin_file.write('\n')
+            
+            cur_poin_file.close()
+            cur_var += inc_param
+
+        # now that all the file are made make an "Orig" directory in the block directory to store
+        # the origonal blocks of initial conditions. This way if something goes wrong we can pull
+        # them out and run again.py again by hand
+        os.mkdir(self.block_dir + '/Orig')
+        os.system('cp ' + self.block_dir +'/*.txt ' + self.block_dir + '/Orig/')
+        os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/2DBlock/Old/')
+        print 'self.block_dir'
+        print self.block_dir
+
+
+   
+#*****************************************************************************                         
+#*****************************************************************************                         
 class One_D_EC(object):
     # number_of -> number of blocks (usualy 500). start -> parameter starting poin. stop ->
     # parameter stoping point (step size will be calculated). cycles-> runtime cycles. x_,vx_dim->
@@ -43,17 +381,6 @@ class One_D_EC(object):
         if 'Poin' in new_lines[16].split()[0]:
             self.sliced = True
 
-    def get_make_dir(self):
-        # use time to name directories
-        timestr = thetime.asctime()
-        newtimestr = "Block_"
-        for a,b in enumerate(timestr.split()):
-            newtimestr+=b+"_"
-        newtimestr = newtimestr.replace(":","")
-        print(newtimestr)
-        os.system("mkdir "+newtimestr)
-        self.block_dir = newtimestr
-    
     def init_block(self):
         if (self.x_num == 0) or (self.x_dim==0.0):
             increment_x = 0.0
@@ -77,7 +404,7 @@ class One_D_EC(object):
     
         cur_coef = self.start + inc_param
     
-        self.get_make_dir()
+        get_make_dir(self)
         
         # make info file
         info_file = open(self.block_dir + '/info.txt','w')
@@ -119,21 +446,6 @@ class One_D_EC(object):
         os.system('cp ' + self.block_dir +'/*.txt ' + self.block_dir + '/Orig/')
         os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/2DBlock/Old/')
         print self.block_dir
-
-    def we_done_yet(self,ssh,job_id):
-        stdin,stdout,stderr = ssh.exec_command('ls | grep '+str(job_id))
-        out_lines = stdout.readlines()
-        err_lines = stderr.readlines()
-
-        number_compleated = len(out_lines)
-        print('This is for checkin stuff in the we_done_yet() function:')
-        print('number_compleated is: ' +str(number_compleated))
-        print('self.number_of is: ' +str(self.number_of))
-
-        if number_compleated == self.number_of:
-            return True
-        else:
-            return False
 
    
 #*****************************************************************************                         
@@ -184,18 +496,7 @@ class Twin_EC(object):
         if 'Poin' in new_lines[19].split()[0]:
             self.sliced = True
 
-
-    def get_make_dir(self):
-        # use time to name directories
-        timestr = thetime.asctime()
-        newtimestr = "Block_"
-        for a,b in enumerate(timestr.split()):
-            newtimestr+=b+"_"
-        newtimestr = newtimestr.replace(":","")
-        print(newtimestr)
-        os.system("mkdir "+newtimestr)
-        self.block_dir = newtimestr
-    
+   
     def init_block(self):
 
         # find the amount we want to increase the parameter by
@@ -232,7 +533,7 @@ class Twin_EC(object):
     
         cur_coef = self.start + inc_param
     
-        self.get_make_dir()
+        get_make_dir(self)
         
         # make info file
         info_file = open(self.block_dir + '/info.txt','w')
@@ -275,22 +576,34 @@ class Twin_EC(object):
         os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/4DBlock/Old/')
         print self.block_dir
 
-    def we_done_yet(self,ssh,job_id):
-        stdin,stdout,stderr = ssh.exec_command('ls | grep '+str(job_id))
-        out_lines = stdout.readlines()
-        err_lines = stderr.readlines()
+#**********Functions**********************************************************                         
+def we_done_yet(ssh,job_id,to_run_object):
+    stdin,stdout,stderr = ssh.exec_command('ls | grep '+str(job_id))
+    out_lines = stdout.readlines()
+    err_lines = stderr.readlines()
 
-        number_compleated = len(out_lines)
-        print('This is for checkin stuff in the we_done_yet() function:')
-        print('number_compleated is: ' +str(number_compleated))
-        print('self.number_of is: ' +str(self.number_of))
+    number_compleated = len(out_lines)
+    print('This is for checkin stuff in the we_done_yet() function:')
+    print('number_compleated is: ' +str(number_compleated))
+    print('to_run_object.number_of is: ' +str(to_run_object.number_of))
 
-        if number_compleated == self.number_of:
-            return True
-        else:
-            return False
+    if number_compleated == to_run_object.number_of:
+        return True
+    else:
+        return False
 
-#*****************************************************************************                         
+def get_make_dir(to__object):
+    # use time to name directories
+    timestr = thetime.asctime()
+    newtimestr = "Block_"
+    for a,b in enumerate(timestr.split()):
+        newtimestr+=b+"_"
+    newtimestr = newtimestr.replace(":","")
+    print(newtimestr)
+    os.system("mkdir "+newtimestr)
+    to__object.block_dir = newtimestr
+
+
 #*****************************************************************************                         
 
 def main():
@@ -307,6 +620,15 @@ def main():
 
     if key_word == 'TwinEC':
         to_run_object = Twin_EC(to_run_file)
+
+    if key_word == 'MB1DEC':
+        to_run_object = MB1DEC()
+
+    if key_word == 'Sin1D':
+        to_run_object = Sin1D()
+    if key_word == 'Sin2D':
+        to_run_object = Sin2D()
+
     
     # this initializes the block on this computer and then scp it to cluster
     to_run_object.init_block()
@@ -326,7 +648,7 @@ def main():
     # behind their firewall while we are on campus anyway.
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     # now connect!
-    ssh.connect('bluemoon-user2.uvm.edu',username='omyers',password='376.re.1873.oven')
+    ssh.connect('bluemoon-user1.uvm.edu',username='omyers',password='376.re.1873.oven')
     a,b,c = ssh.exec_command('pwd')
     print('working directory after login: ' + str(b.readlines()))
     print('to_run_object.block_dir is: '+str(to_run_object.block_dir))
@@ -337,10 +659,15 @@ def main():
     err_lines = stderr.readlines()
     print('stdout lines after copy: ' + str(out_lines))
     print('stderr lines after copy: ' + str(err_lines))
+
+    sleep_secs = 0
+    print('sleeping for ... '+str(sleep_secs)+' seconds')
+    thetime.sleep(sleep_secs)
+
     # variable into qsub works through the following format:
     # qsub -v param1=val,param2=val,... script.sh
     # FIN is the totatl number of blocks we are running. if we are running 500 blocks FIN = 499
-    print('qsub command: '+'qsub -v DIR='+to_run_object.block_dir+ ',FIN='+str(to_run_object.number_of-1)+ ',TOTITER='+str(totIter)+ ',SLICED='+str(to_run_object.sliced)+ ' -t 0-' +str(to_run_object.number_of-1)+ 'again.script')
+    print('qsub command: '+'qsub -q shortq  -v DIR='+to_run_object.block_dir+ ',FIN='+str(to_run_object.number_of-1)+ ',TOTITER='+str(totIter)+ ',SLICED='+str(to_run_object.sliced)+ ' -t 0-' +str(to_run_object.number_of-1)+ 'again.script')
     stdin,stdout,stderr = ssh.exec_command('qsub -v DIR='+to_run_object.block_dir+
             ',FIN='+str(to_run_object.number_of-1)+
             ',TOTITER='+str(totIter)+
@@ -351,23 +678,24 @@ def main():
     err_lines = stderr.readlines()
 
     job_id = out_lines[0][:7]
+    print('job id: ' + str(job_id))
 
     print('stdout lines: ' + str(out_lines))
     print('stderr lines: ' + str(err_lines))
     #stdin,stdout,stderr = ssh.exec_command('rm tempagain.script')
     
-    # listen and wait for all out put to be done.
-    # for testing lets just wait 5min
-    while not to_run_object.we_done_yet(ssh,job_id):
-        thetime.sleep(300)
-    
-    # remove the origonal files
-    stdin,stdout,stderr = ssh.exec_command('rm \
-            /users/o/m/omyers/Data/EC/2DBlock/Old/'+to_run_object.block_dir+'/*poindat.txt')
-    # unzip the new ones. 
-    # stdin,stdout,stderr = ssh.exec_command('gunzip /users/o/m/omyers/Data/EC/2DBlock/'+to_run_object.block_dir/+'*poindat.txt.gz')
-    
-    print('WE MADE IT YAY')
+    ## listen and wait for all out put to be done.
+    ## for testing lets just wait 5min
+    #while not we_done_yet(ssh,job_id,to_run_object):
+    #    #thetime.sleep(300)
+    #    thetime.sleep(10)
+    #
+    #print('WE MADE IT YAY')
+
+    # a couple of audible bells to let me know its done
+    for i in range(5):
+        thetime.sleep(.5)
+        print('\a')
 
 if __name__ == '__main__':
     main()
