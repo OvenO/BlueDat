@@ -79,6 +79,8 @@ poincar.txt
 # We really dont need this stuf either (too old and hefty)
 OldSingPltTrag/
 BlockTrag/
+# trying to ommit all the Block directories
+Block_*/
 
 # imovie files #
 ################
