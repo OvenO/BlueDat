@@ -1,9 +1,0 @@
-dir: Block_Mon_Nov_25_155704_2013_
-surf: 1.0
-dt: 0.05
-beta (damping): 0.6
-cycles (run time): 80
-N (particle number): 100
-qq (particle interaction strength): 1e-05
-num_cell (system length): 1000.0
-A (interaction amplitude): sweep variable

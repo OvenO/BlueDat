@@ -5,6 +5,7 @@ from datetime import datetime
 import time as thetime
 import paramiko
 import random
+import shutil
 
 class Sin2D(object):
     # N -> number of particles
@@ -19,14 +20,14 @@ class Sin2D(object):
     # that each particle may have its own interaction with the field
     def __init__(self):
         self.block_dir = ''
-        self.var = 'A'
+        self.var = 'qq'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin2D/'
-        self.number_of = 6
-        self.start     = 0.1
-        self.stop      = 1.1
+        self.number_of = 300
+        self.start     = .5
+        self.stop      = 3.0
         self.dt        = 0.05
         self.cycles    = 80
-        self.N = 100
+        self.N = 16
         self.qq = 0.00001
         self.beta = .6
         self.x_num_cell = 10.0
@@ -35,7 +36,8 @@ class Sin2D(object):
         self.order = 2
         self.dx = self.x_num_cell * 2.0 * pl.pi
         self.dy = self.y_num_cell * 2.0 * pl.pi
-        self.A = pl.zeros(2*self.N) +.5
+        #self.A = pl.zeros(2*self.N) +.5
+        self.A = 1.45
 
         # Full trajectory or just Poincare sections
         self.sliced = False
@@ -55,41 +57,41 @@ class Sin2D(object):
         info_file.write('dir: '+str(self.block_dir)+'\nsurf: 1.0') 
         info_file.write('\ndt: '+str(self.dt))
         if self.var == 'beta':
-            info_file.write('\nbeta (damping): sweep variable')
+            info_file.write('\nbeta (damping): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
             info_file.write('\nbeta (damping): '+str(self.beta))
         if self.var == 'cycles': 
-            info_file.write('\ncycles (run time): sweep variable')
+            info_file.write('\ncycles (run time): sweep variable '+str(self.start)+'-'+str(self.stop))
         else: 
             info_file.write('\ncycles (run time): '+str(self.cycles))
         if self.var == 'N': 
-            info_file.write('\nN (particle number): sweep variable')
+            info_file.write('\nN (particle number): sweep variable '+str(self.start)+'-'+str(self.stop))
         else: 
             info_file.write('\nN (particle number): '+str(self.N))
         if self.var == 'qq': 
-            info_file.write('\nqq (particle interaction strength): sweep variable')
+            info_file.write('\nqq (particle interaction strength): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
             info_file.write('\nqq (particle interaction strength): '+str(self.qq))
         if self.var == 'x_num_cell':
-            info_file.write('\nx_num_cell (system length in x): sweep variable')
+            info_file.write('\nx_num_cell (system length in x): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
             info_file.write('\nx_num_cell (system length in x): '+str(self.x_num_cell))
         if self.var == 'y_num_cell':
-            info_file.write('\ny_num_cell (system length): sweep variable')
+            info_file.write('\ny_num_cell (system length): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
             info_file.write('\ny_num_cell (system length): '+str(self.y_num_cell))
         if self.var == 'x_periodic':
-            info_file.write('\nx_periodic (peridic in x?): sweep variable')
+            info_file.write('\nx_periodic (peridic in x?): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
             info_file.write('\nx_periodic (peridic in x?): '+str(self.x_periodic))
         if self.var == 'order':
-            info_file.write('\norder (order of periodic wrap force): sweep variable')
+            info_file.write('\norder (order of periodic wrap force): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
             info_file.write('\norder (order of periodic wrap force): '+str(self.order))
         if self.var == 'A': 
-            info_file.write('\nA (interaction amplitude): sweep variable')
+            info_file.write('\nA (interaction amplitude): sweep variable '+str(self.start)+'-'+str(self.stop))
         else: 
-            if type(A)==float: 
+            if type(self.A)==float: 
                 info_file.write('\nA (interaction amplitude): '+str(self.A))
             else: 
                 info_file.write('\nA (interaction amplitude): '+str(min(self.A))+'-'+str(max(self.A)))
@@ -143,12 +145,12 @@ class Sin1D(object):
         self.block_dir = ''
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
-        self.number_of = 6
+        self.number_of = 100
         self.start     = 0.1
         self.stop      = 1.1
         self.dt        = 0.05
-        self.cycles    = 80
-        self.N = 100
+        self.cycles    = 200
+        self.N = 1
         self.qq = .00001
         self.beta = .6
         self.num_cell = 1000.0
@@ -173,27 +175,27 @@ class Sin1D(object):
         info_file.write('dir: '+str(self.block_dir)+'\nsurf: 1.0') 
         info_file.write('\ndt: '+str(self.dt))
         if self.var == 'beta':
-            info_file.write('\nbeta (damping): sweep variable')
+            info_file.write('\nbeta (damping): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
             info_file.write('\nbeta (damping): '+str(self.beta))
         if self.var == 'cycles': 
-            info_file.write('\ncycles (run time): sweep variable')
+            info_file.write('\ncycles (run time): sweep variable '+str(self.start)+'-'+str(self.stop))
         else: 
             info_file.write('\ncycles (run time): '+str(self.cycles))
         if self.var == 'N': 
-            info_file.write('\nN (particle number): sweep variable')
+            info_file.write('\nN (particle number): sweep variable '+str(self.start)+'-'+str(self.stop))
         else: 
             info_file.write('\nN (particle number): '+str(self.N))
         if self.var == 'qq': 
-            info_file.write('\nqq (particle interaction strength): sweep variable')
+            info_file.write('\nqq (particle interaction strength): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
             info_file.write('\nqq (particle interaction strength): '+str(self.qq))
         if self.var == 'num_cell':
-            info_file.write('\nnum_cell (system length): sweep variable')
+            info_file.write('\nnum_cell (system length): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
             info_file.write('\nnum_cell (system length): '+str(self.num_cell))
         if self.var == 'A': 
-            info_file.write('\nA (interaction amplitude): sweep variable')
+            info_file.write('\nA (interaction amplitude): sweep variable '+str(self.start)+'-'+str(self.stop))
         else: 
             if type(A)==float: 
                 info_file.write('\nA (interaction amplitude): '+str(self.A))
@@ -279,27 +281,27 @@ class MB1DEC(object):
         info_file.write('dir: '+str(self.block_dir)+'\nsurf: 1.0') 
         info_file.write('\ndt: '+str(self.dt))
         if self.var == 'beta':
-            info_file.write('\nbeta (damping): sweep variable')
+            info_file.write('\nbeta (damping): sweep variable ')
         else:
             info_file.write('\nbeta (damping): '+str(self.beta))
         if self.var == 'cycles': 
-            info_file.write('\ncycles (run time): sweep variable')
+            info_file.write('\ncycles (run time): sweep variable ')
         else: 
             info_file.write('\ncycles (run time): '+str(self.cycles))
         if self.var == 'N': 
-            info_file.write('\nN (particle number): sweep variable')
+            info_file.write('\nN (particle number): sweep variable ')
         else: 
             info_file.write('\nN (particle number): '+str(self.N))
         if self.var == 'qq': 
-            info_file.write('\nqq (particle interaction strength): sweep variable')
+            info_file.write('\nqq (particle interaction strength): sweep variable ')
         else:
             info_file.write('\nqq (particle interaction strength): '+str(self.qq))
         if self.var == 'num_cell':
-            info_file.write('\nnum_cell (system length): sweep variable')
+            info_file.write('\nnum_cell (system length): sweep variable ')
         else:
             info_file.write('\nnum_cell (system length): '+str(self.num_cell))
         if self.var == 'A': 
-            info_file.write('\nA (interaction amplitude): sweep variable')
+            info_file.write('\nA (interaction amplitude): sweep variable ')
         else: 
             if type(A)==float: 
                 info_file.write('\nA (interaction amplitude): '+str(self.A))
@@ -648,7 +650,7 @@ def main():
     # behind their firewall while we are on campus anyway.
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     # now connect!
-    ssh.connect('bluemoon-user1.uvm.edu',username='omyers',password='376.re.1873.oven')
+    ssh.connect('bluemoon-user2.uvm.edu',username='omyers',password='376.re.1873.oven')
     a,b,c = ssh.exec_command('pwd')
     print('working directory after login: ' + str(b.readlines()))
     print('to_run_object.block_dir is: '+str(to_run_object.block_dir))
@@ -660,22 +662,27 @@ def main():
     print('stdout lines after copy: ' + str(out_lines))
     print('stderr lines after copy: ' + str(err_lines))
 
-    sleep_secs = 0
-    print('sleeping for ... '+str(sleep_secs)+' seconds')
-    thetime.sleep(sleep_secs)
+    #sleep_secs = 100
+    #print('sleeping for ... '+str(sleep_secs)+' seconds')
+    #thetime.sleep(sleep_secs)
 
     # variable into qsub works through the following format:
     # qsub -v param1=val,param2=val,... script.sh
     # FIN is the totatl number of blocks we are running. if we are running 500 blocks FIN = 499
-    print('qsub command: '+'qsub -q shortq  -v DIR='+to_run_object.block_dir+ ',FIN='+str(to_run_object.number_of-1)+ ',TOTITER='+str(totIter)+ ',SLICED='+str(to_run_object.sliced)+ ' -t 0-' +str(to_run_object.number_of-1)+ 'again.script')
+    # -q shortq  
+    print('qsub command: '+'qsub -v DIR='+to_run_object.block_dir+ ',FIN='+str(to_run_object.number_of-1)+ ',TOTITER='+str(totIter)+ ',SLICED='+str(to_run_object.sliced)+ ' -t 0-' +str(to_run_object.number_of-1)+ ' again.script')
     stdin,stdout,stderr = ssh.exec_command('qsub -v DIR='+to_run_object.block_dir+
             ',FIN='+str(to_run_object.number_of-1)+
             ',TOTITER='+str(totIter)+
             ',SLICED='+str(to_run_object.sliced)+
-            ' -t 0-' +str(to_run_object.number_of-1)+ 
+            ' -t 0-' +str(to_run_object.number_of-1)+ '\ '+
             ' again.script')
     out_lines = stdout.readlines()
     err_lines = stderr.readlines()
+
+    print('length of job id out_lines: ' + str(len(out_lines)))
+    if len(out_lines) == 0:
+        shutil.rmtree(to_run_object.block_dir)
 
     job_id = out_lines[0][:7]
     print('job id: ' + str(job_id))

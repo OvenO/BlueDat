@@ -1,57 +1,73 @@
+#!/usr/bin/python
 import pylab as pl
 import os
 import argparse
 import numpy as np
+import o_funcs as of
 
-def get_system_info():
+# Still crossing over program from 1D to 2D. 
+# working features:
+# 1) movie of real trajectories for single file (make_real)
+# 2) movie of last section of trajectories of all files (lm)
+# 3) t=0 poincare section (tzpc)
 
-    # get the  system info
-    info_f = open('info.txt','r')
-    l = info_f.readlines()
+#OOOOKKKKKK Going to make this work for ANY DIMESTION
+# DEbug time
 
-    looking_for=['qq','dt','beta','A','cycles','particle number','num_cell']
-    values =    [ 0.0, 0.0, 0.0  ,0.0, 0.0    , 0.0             , 0.0      ]
-    # make sure to type cast all of these right later (above)
+def set_projection(projection,x_num_cell,y_num_cell,Dim):
+    # when defining the projection string: <horizontal axis><vertical axis>. eg xvx -> vx phase
+    # space with x as horizontal axis.
+    # depending on the projection type we need a number that controles how we slice the data
+    # lines. An array catered to the slicing (see plot to make more sence of it). For now
+    # projection will not be anything pathological (i.e only velocity as verticasl
+    # axis in x,y phase projections
+    if projection == 'xy':
+        if Dim == 1: 
+            print('No y in 1D')
+            quit()
+        ax_num = pl.array([2,3,3,4])
+        # make strings for plots acordingly
+        x_lbl = r'$x$'
+        y_lbl = r'$y$'
+        # set axis limits (ranges) acordingly
+        x_rng = [0.0,2.0*pl.pi*x_num_cell]
+        y_rng = [0.0,2.0*pl.pi*y_num_cell]
+        
+    if projection == 'xvx':
+        if Dim == 2:
+            ax_num = pl.array([2,3,0,1])
+        if Dim == 1:
+            ax_num = pl.array([1,2,0,1])
+        x_lbl = r'$x$'
+        y_lbl = r'$\dot{x}$'
+        x_rng = [0.0,2.0*pl.pi*x_num_cell]
+        y_rng = [-2.5,2.5]
+    if projection == 'yvy':
+        if Dim == 1: 
+            print('No y in 1D')
+            quit()
+        ax_num = pl.array([3,4,1,2])
+        x_lbl = r'$y$'
+        y_lbl = r'$\dot{y}$'
+        x_rng = [0.0,2.0*pl.pi*y_num_cell]
+        y_rng = [-2.5,2.5]
+    if projection == 'vxvy':
+        if Dim == 1: 
+            print('No y in 1D')
+            quit()
+        ax_num = pl.array([0,1,1,2])
+        x_lbl = r'$\dot{x}$'
+        y_lbl = r'$\dot{y}$'
+        x_rng = [-2.5,2.5]
+        y_rng = [-2.5,2.5]
 
-    for i,j in enumerate(l):
-        for a,b in enumerate(looking_for):
-            if b in j:
-                if 'sweep' in j:
-                    values[a] = 'sweep'
-                else: 
-                    values[a] = float(j.split()[-1])
-                
-    qq         = values[0]               
-    dt         = values[1]
-    beta       = values[2]
-    A          = values[3]
-    cycles     = values[4]
-    N          = values[5]
-    num_cell = values[6]
-    # type cast 
-    if type(qq        ) != str: qq         = float(qq        )
-    else: sweep_str = r'$q_i q_j$'
-    if type(dt        ) != str: dt         = float(dt        )
-    else: sweep_str = r'$\delta t$'
-    if type(beta      ) != str: beta       = float(beta      )
-    else: sweep_str = r'$\beta$'
-    if type(A         ) != str: A          = float(A         )
-    else: sweep_str = r'$A$'
-    if type(cycles    ) != str: cycles     = int(  cycles    )
-    else: sweep_str = '$Number of Cycles$'
-    if type(N         ) != str: N          = int(  N         )
-    else: sweep_str = r'$N$'
-    if type(num_cell) != str: num_cell = int(num_cell)
-
-    return num_cell,qq,dt,beta,A,cycles,N,sweep_str
+    return x_lbl,y_lbl,x_rng,y_rng,ax_num 
 
 def main():
-    # plot type
-    make_real = False
-    make_phase = False
-    make_last_phase = False
-    # last phase movie (lpm)
-    make_lpm = False
+    # 'one option with a plane projection makes a time movies of mparticles motions on that plane
+    make_one_movie = False
+    # last movie (lm) Define projection type
+    make_lm = False
     # t=0 poincare section
     make_tzpc = False
     # v=0 poincare section
@@ -71,32 +87,42 @@ def main():
     parser.add_argument('-f',action='store',dest = 'f',type = str, required = False)
     # plot type
     parser.add_argument('-t',action='store',dest = 't',type = str,required = True)
+    # projection on to which axis
+    parser.add_argument('-p',action='store',dest = 'p',type = str,required = False)
     inargs = parser.parse_args()
     d = inargs.d
     f = inargs.f
     plot_type = inargs.t
+    projection = inargs.p
+
+    'parsed arguments'
 
     # plot type
-    if plot_type ==  'real':
-        make_real =  True
-        skip = 3
-    if plot_type == 'phase':
-        make_phase = True
-    if plot_type == 'lphase':
-        make_last_phase = True
-    if plot_type == 'lpm':
-        make_lpm = True
+    if plot_type ==  'one':
+        print('plot type is: one')
+        make_one_movie =  True
+        # plot every image or everyother or ...
+        # to plot evey image skip = 1. Skip cannot be less than 1 or else you get devide by zero
+        # error in the moddulus.
+        skip = 5
+        print('skip = ' + str(skip))
+    if plot_type == 'lm':
+        print('plot type is: last movie (lm)')
+        make_lm = True
     if plot_type =='fv':
+        print('plot type is: final velocity histogram(fv)')
         make_fv = True
         want_bins = 20
+        print('number of bins = '+str(want_bins))
     if plot_type =='fvm':
+        print('plot type is: final velocity movie (histogram) (fv)')
         make_fvm = True
         want_bins = 20
+        print('number of bins = '+str(want_bins))
     # plot velocity averages and standard deviatinos 
     if plot_type == 'averages':
         make_averages = True
-        # whole run: avg_over = 0
-        # none of the run: avg_over = 1
+        # for now lets do averages over last half of run times
         avg_over = .5
 
     # ultimitaly we want to work backwards from the final time so that if we want to we can cut off
@@ -104,27 +130,25 @@ def main():
     # otherwise we are not going to have very many data points
     # throw away first 5th
     throw_away = 5
-    if plot_type == 'tzpc':
-        make_tzpc = True
     if plot_type == 'vzpc':
         make_vzpc = True
+    if plot_type == 'tzpc':
+        make_tzpc = True
         
 
 
     os.chdir(d)
 
-    num_cell,qq,dt,beta,A,cycles,N,sweep_str = get_system_info()
+    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim = of.get_system_info()
 
-
-
-    d = num_cell*2.0*pl.pi
-
+    if projection != None:
+        x_lbl,y_lbl,x_rng,y_rng,ax_num = set_projection(projection,x_num_cell,y_num_cell,Dim)
     
-    if make_lpm or make_fvm or make_averages:
+    if make_lm or make_fvm or make_averages:
         count = 0
         var_arr = pl.array([])
-        if make_lpm:
-            os.mkdir('LastPhaseMovie')
+        if make_lm:
+            os.mkdir('LastMovie_'+projection)
         if make_fvm:
             os.mkdir('LastVelMovie')
             # lets see what the velocity disrobution is when the potential is zero
@@ -150,28 +174,34 @@ def main():
                 sol = np.genfromtxt(cur_file)
                 cur_file.close()
 
-                # modulus by the length of the system
-                sol[:,N:2*N] = sol[:,N:2*N]%(num_cell*2.0*pl.pi)
+                # modulus by the lengths of the system
+                sol[:,Dim*N:(Dim+1)*N] = sol[:,Dim*N:(Dim+1)*N]%(x_num_cell*2.0*pl.pi)
+                if Dim ==2: 
+                    sol[:,3*N:4*N] = sol[:,3*N:4*N]%(y_num_cell*2.0*pl.pi)
                 
                 if make_averages:
                     temp_v = pl.array([])
                     temp_v = pl.append(temp_v,sol[int(len(sol)*avg_over):,:N])
                     avg_vels = pl.append(avg_vels,temp_v.mean())
-                    std_vels = pl.append(std_vels,temp_v.std())
+                    if temp_v.std() ==0.0:
+                        std_vels = pl.append(std_vels,temp_v.std())
                 
-                if make_lpm:
-                    lp_fig = pl.figure()
-                    lp_ax = lp_fig.add_subplot(111)
-                    lp_ax.set_xlim([0,d])
-                    lp_ax.set_ylim([-2.0,2.0])
-                    lp_ax.set_xlabel(r'$x$'      ,fontsize=30)
-                    lp_ax.set_ylabel(r'$\dot{x}$',fontsize=30)
+                if make_lm:
+                    ## get rid of crossover lines in plot
+                    #abs_d_data = np.abs(np.diff(sol))
+                    #mask = np.hstack([ abs_d_data > abs_d_data.mean()+3*abs_d_data.std(), [False]])
+                    #masked_data = np.ma.MaskedArray(sol, mask)
+
+                    lm_fig = pl.figure()
+                    lm_ax = lm_fig.add_subplot(111)
+                    lm_ax.set_xlabel(x_lbl,fontsize=30)
+                    lm_ax.set_ylabel(y_lbl,fontsize=30)
                     # how much of the last part of the solution do you want to plot
-                    amount = len(sol)-int(len(sol)/10.0)
-                    lp_ax.plot(sol[amount:,N:2*N]%d,sol[amount:,:N],c='k')
-                    lp_fig.tight_layout()
-                    lp_fig.savefig('LastPhaseMovie/%(number)04d.png'%{'number':cur_poin_num},dpi=400)
-                    pl.close(lp_fig)
+                    amount = len(sol)-int(len(sol)/5.0)
+                    lm_ax.scatter(sol[amount:,(ax_num[0])*N:(ax_num[1])*N],sol[amount:,(ax_num[2])*N:(ax_num[3])*N],c='k',s=1)
+                    lm_fig.tight_layout()
+                    lm_fig.savefig('LastMovie_'+projection+'/%(number)04d.png'%{'number':cur_poin_num})
+                    pl.close(lm_fig)
                     
                 if make_fvm:
                     fv_fig = pl.figure()
@@ -199,36 +229,21 @@ def main():
         cur_file = open(f,"r")
         # get the varible for the plot
         var = float(cur_file.readline().split()[-1])
-        print(i)
         sol = np.genfromtxt(cur_file)
         cur_file.close()
 
         # modulus by the length of the system
-        sol[:,N:2*N] = sol[:,N:2*N]%(num_cell*2.0*pl.pi)
+        sol[:,Dim*N:(Dim+1)*N] = sol[:,Dim*N:(Dim+1)*N]%(x_num_cell*2.0*pl.pi)
+        if Dim ==2:
+            sol[:,3*N:4*N] = sol[:,3*N:4*N]%(y_num_cell*2.0*pl.pi)
 
         # puts the file number ahead of the RunImages folder to prevent overwriting
         f_num_str = f[:f.find('p')]
         if (f_num_str+'RunImages') not in os.listdir('.'):
             os.mkdir(f_num_str+'RunImages')
-
-        if make_phase:
-            os.mkdir(f_num_str+'RunImages/PhaseSpace')
-        if make_real:
-            os.mkdir(f_num_str+'RunImages/RealSpace')
-        if make_last_phase:
-            os.mkdir(f_num_str+'RunImages/LastPhase')
-            lp_fig = pl.figure()
-            lp_ax = lp_fig.add_subplot(111)
-            lp_ax.set_xlim([0,d])
-            lp_ax.set_ylim([-2.0,2.0])
-            lp_ax.set_xlabel(r'$x$'      ,fontsize=30)
-            lp_ax.set_ylabel(r'$\dot{x}$',fontsize=30)
-            # how much of the last part of the solution do you want to plot
-            amount = len(sol)-int(len(sol)/10.0)
-            lp_ax.plot(sol[amount:,N:2*N]%d,sol[amount:,:N],c='k')
-            lp_fig.tight_layout()
-            lp_fig.savefig(f_num_str+'RunImages/LastPhase/last_phase.png',dpi=600)
-            pl.close(lp_fig)
+        if make_one_movie:
+            print('making directory: ' + f_num_str+'RunImages/Space_'+projection)
+            os.mkdir(f_num_str+'RunImages/Space_'+projection)
         if make_tzpc:
             # see if the data is already in poincare section form
             already_pc = False
@@ -239,16 +254,17 @@ def main():
             # otherwise we are not going to have very many data points
             tz_fig = pl.figure()
             tz_ax = tz_fig.add_subplot(111)
-            tz_ax.set_xlabel(r'$x$'      ,fontsize=30)
-            tz_ax.set_ylabel(r'$\dot{x}$',fontsize=30)
+            tz_ax.set_xlabel(x_lbl,fontsize=30)
+            tz_ax.set_ylabel(y_lbl,fontsize=30)
             for i in range(len(sol)/throw_away,len(sol)):
                 if(((i*dt)%(2.0*pl.pi))<dt) or already_pc:
-                    #tz_ax.set_xlim([0,d])
                     #tz_ax.set_ylim([-2.0,2.0])
-                    tz_ax.scatter(sol[i,N:2*N]%d,sol[i,:N],c='b',s=1)
+                    tz_ax.scatter(sol[i,ax_num[0]*N:ax_num[1]*N],sol[i,ax_num[2]*N:ax_num[3]*N],c='b',s=1)
             tz_fig.tight_layout()
             tz_fig.savefig(f_num_str+'RunImages/'+f_num_str+'tzpc.png')
             pl.close(tz_fig)
+
+        # THIS IS NOT QUITE GENERALY REDY
         if make_vzpc:
             # see if the data is already in t=0 poincare section form
             # if it is we cannot do this so exit
@@ -276,38 +292,28 @@ def main():
 
 
         
-        if make_phase or make_real:
+        if make_one_movie:
+            print('in make_one ploting part')
             for i in range(len(sol)):
-                if i%skip != 0:
+                print('in make_one loop')
+                if i%skip!=0:
                     continue
                 print(i)
                 print(sol[i,:N])
                 # scatter for different As solutions
                 #ax.scatter(sol[i,2*N:(2*N+N/2)],sol[i,3*N:(3*N+N/2)]%d,c='r')
                 #ax.scatter(sol[i,(2*N+N/2):3*N],sol[i,(3*N+N/2):4*N]%d,c='b')
-                if make_real:
+                if make_one_movie:
                     r_fig = pl.figure()
                     r_ax = r_fig.add_subplot(111)
-                    #r_ax.set_xlim([0,d])
-                    r_ax.set_xlim([2481,2487])
-                    r_ax.set_ylim([0,2.0])
-                    r_ax.set_xlabel(r'$x$',fontsize=30)
-                    r_ax.set_ylabel(r'$y$',fontsize=30)
-                    r_ax.scatter(sol[i,N:2*N]%d,pl.zeros(N)+1.0,c='b')
+                    r_ax.set_xlim(x_rng)
+                    r_ax.set_ylim(y_rng)
+                    r_ax.set_xlabel(x_lbl,fontsize=30)
+                    r_ax.set_ylabel(x_lbl,fontsize=30)
+                    r_ax.scatter(sol[i,ax_num[0]*N:ax_num[1]*N],sol[i,ax_num[2]*N:ax_num[3]*N],c='b',s=1)
                     r_fig.tight_layout()
-                    r_fig.savefig(f_num_str+'RunImages/RealSpace/%(number)04d.png'%{'number':i})
+                    r_fig.savefig(f_num_str+'RunImages/Space_'+projection+'/%(number)04d.png'%{'number':i})
                     pl.close(r_fig)
-                if make_phase:
-                    p_fig = pl.figure()
-                    p_ax = p_fig.add_subplot(111)
-                    p_ax.set_xlim([0,d])
-                    p_ax.set_ylim([-2.0,2.0])
-                    p_ax.set_xlabel(r'$x$'      ,fontsize=30)
-                    p_ax.set_ylabel(r'$\dot{x}$',fontsize=30)
-                    p_ax.scatter(sol[i,N:2*N]%d,sol[i,:N],c='b')
-                    p_fig.tight_layout()
-                    p_fig.savefig(f_num_str+'RunImages/PhaseSpace/%(number)04d.png'%{'number':i})
-                    pl.close(p_fig)
 
         if make_fv:
             # lets see what the velocity disrobution is when the potential is zero
