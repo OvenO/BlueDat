@@ -71,40 +71,81 @@ def diffusion_coef(f):
 
 def kenetic_energy():
     qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
+    # how much of soluton do we want to use? 1 -> all 0 -> none
+    how_much = .2
 
     averages= pl.array([])
     var_arr = pl.array([])
+    # See paper j. chem phys., vol 120, No 1, 1 Jan 2004
+    energy_stuff = pl.array([])
+    avg_energy_sqrd = pl.array([])
     for i,j in enumerate(os.listdir('.')):
+        if 'poindat.txt' not in j:
+            continue
         cur_file = open(j,'r')
-        cur_sweep_var = cur_file.readline()
+        cur_sweep_var = float(cur_file.readline().split()[-1])
         cur_data=pl.genfromtxt(cur_file)
         cur_file.close()
 
         var_arr = pl.append(var_arr,cur_sweep_var)
 
         if Dim==1:
-            mag_vel_arr_sqrd = cur_data[:,:N]**2
+            mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2
         if Dim==2:
-            mag_vel_arr_sqrd = cur_data[:,:N]**2+cur_data[:,N:2*N]**2
+            mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2+cur_data[int(-how_much*len(cur_data)):,N:2*N]**2
+        if i==0: print('shape of mag_vel_arr_sqrd'+str(pl.shape(mag_vel_arr_sqrd)))
         
-        avg_mag_vel_sqrd = mag_vel_arr_sqrd.mean()
-        averages = pl.append(averages,avg_mag_vel_sqrd)
+        to_sum = 0.0
+        to_sum_avg_en = 0.0
+        for a in range(len(mag_vel_arr_sqrd[0,:])):
+            for b in range(len(mag_vel_arr_sqrd[0,:])):
+                first = (mag_vel_arr_sqrd[:,a]*mag_vel_arr_sqrd[:,b]).mean()
+                second = (mag_vel_arr_sqrd[:,a].mean())*(mag_vel_arr_sqrd[:,b].mean())
+                
+                to_sum += first - second
+                to_sum_avg_en += second
+        
+        #print('to_sum: ' +str(to_sum))
+        #print('to_sum_avg_en: ' +str(to_sum_avg_en))
+        energy_stuff = pl.append(energy_stuff,to_sum/to_sum_avg_en)
+
+        # this is more or less wrong. you could find the varience and the eaverage but for the
+        # enerygy you need to sum the KE of each particle. look as second varible.
+        #avg_mag_vel_sqrd = mag_vel_arr_sqrd.mean()
+        
+        averages = pl.append(averages,pl.sqrt(to_sum_avg_en))
         
     fig = pl.figure()
     ax = fig.add_subplot(111)
-    pl.scatter(var_arr,averages)
+    pl.scatter(var_arr,averages/2)
+    #ax.set_xlim([.5,1.5])
     ax.set_xlabel(sweep_str,fontsize=30)
-    ax.set_ylabel(r'$\langle v^2 \rangle$',fontsize=30)
+    ax.set_ylabel(r'$\langle v^2 \rangle / 2$',fontsize=30)
     fig.tight_layout()
     fig.savefig('v_sqrd_avg.png',dpi=300)
     pl.close(fig)
 
+    fig = pl.figure()
+    ax = fig.add_subplot(111)
+    # deided by 4 comes from KE -> (1/2)**2
+    pl.scatter(var_arr,energy_stuff/4)
+    #ax.set_xlim([.5,1.5])
+    ax.set_xlabel(sweep_str,fontsize=30)
+    ax.set_ylabel(r'$\frac{\langle E^2 \rangle - \langle E \rangle ^ 2}{\langle E \rangle ^ 2}$',fontsize=30)
+    fig.tight_layout()
+    fig.savefig('energy_stuff.png',dpi=300)
+    pl.close(fig)
+
+def frequency(f):
+    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
+
+     
 
 def main():
 
     parser = argparse.ArgumentParser()
     # d is for directory
-    parser.add_argument('-d',action='store',dest = 'd',type = str, required = True)
+    parser.add_argument('-d',action='store',dest = 'd',type = str, required = False, default = './')
     # f is for file this is needed for make_acf_tau_plot()
     parser.add_argument('-f',action='store',dest = 'f',type = str, required = False)
     # plot type
@@ -125,8 +166,12 @@ def main():
         print('calling diffusion_coef(f)')
         diffusion_coef(f)
     if plot_type == 'ke':
-        kenetic_energy()
         print('calling kenetic_energy()')
+        kenetic_energy()
+    if plot_type == 'frequency':
+        print('calling frequency')
+        frequency(f)
+
 
 if __name__ == '__main__':
     main()

@@ -4,6 +4,7 @@ import os
 import argparse
 import scipy as np
 import o_funcs as of
+import subprocess
 
 
 def main():
@@ -11,7 +12,7 @@ def main():
     min_count = 1
     parser = argparse.ArgumentParser()
     # d is for directory
-    parser.add_argument('-d',action='store',dest = 'd',type = str, required = True)
+    parser.add_argument('-d',action='store',dest = 'd',type = str, required = False, default = './')
     # number of PC sections we want to use (going back from the last)
     parser.add_argument('-n',action='store',dest = 'n',type = int, required = False)
     # project onto which axis?
@@ -147,6 +148,8 @@ def main():
 
     pl.savefig(save_str,dpi=200)
     os.system('open paper_'+projection+'_bif_hist'+str(number)+'.png')
+
+    subprocess.call('say Finished the bifurcation histogram',shell = True)
 
     #ax.axis([0.0,2*pl.pi,-1.8,1.8])
 

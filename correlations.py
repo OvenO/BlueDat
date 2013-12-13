@@ -210,7 +210,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     # d is for directory
-    parser.add_argument('-d',action='store',dest = 'd',type = str, required = True)
+    parser.add_argument('-d',action='store',dest = 'd',type = str, required = False, default = './')
     # f is for file this is needed for make_acf_tau_plot()
     parser.add_argument('-f',action='store',dest = 'f',type = str, required = False)
     # plot type

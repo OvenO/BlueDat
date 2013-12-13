@@ -80,7 +80,7 @@ def main():
 
     parser = argparse.ArgumentParser()
     # d is for directory
-    parser.add_argument('-d',action='store',dest = 'd',type = str, required = True)
+    parser.add_argument('-d',action='store',dest = 'd',type = str, required = False, default = './')
     # what are we doing? t = type
     parser.add_argument('-t',action='store',dest = 't',type = str, required = True)
 

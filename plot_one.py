@@ -63,6 +63,11 @@ def set_projection(projection,x_num_cell,y_num_cell,Dim):
 
     return x_lbl,y_lbl,x_rng,y_rng,ax_num 
 
+def plot_stc():
+    os.chdir(d)
+    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim = of.get_system_info()
+
+
 def main():
     # 'one option with a plane projection makes a time movies of mparticles motions on that plane
     make_one_movie = False
@@ -79,10 +84,12 @@ def main():
     # plot velocity averages and standard deviatinos for now lets do averages over last half of run
     # times
     make_averages = False
+    # spacio temporal chaos
+    make_stc = False
 
     parser = argparse.ArgumentParser()
     # d is for directory
-    parser.add_argument('-d',action='store',dest = 'd',type = str, required = True)
+    parser.add_argument('-d',action='store',dest = 'd',type = str, required = False, default = './')
     # f is for file
     parser.add_argument('-f',action='store',dest = 'f',type = str, required = False)
     # plot type
@@ -134,7 +141,10 @@ def main():
         make_vzpc = True
     if plot_type == 'tzpc':
         make_tzpc = True
-        
+    # spacio temporal chaos
+    if plot_type == 'stc'
+        plot_stc()
+        quit()
 
 
     os.chdir(d)
@@ -183,8 +193,7 @@ def main():
                     temp_v = pl.array([])
                     temp_v = pl.append(temp_v,sol[int(len(sol)*avg_over):,:N])
                     avg_vels = pl.append(avg_vels,temp_v.mean())
-                    if temp_v.std() ==0.0:
-                        std_vels = pl.append(std_vels,temp_v.std())
+                    std_vels = pl.append(std_vels,temp_v.std())
                 
                 if make_lm:
                     ## get rid of crossover lines in plot
@@ -194,6 +203,7 @@ def main():
 
                     lm_fig = pl.figure()
                     lm_ax = lm_fig.add_subplot(111)
+                    lm_ax.set_title(sweep_str + '='+str(var))
                     lm_ax.set_xlabel(x_lbl,fontsize=30)
                     lm_ax.set_ylabel(y_lbl,fontsize=30)
                     # how much of the last part of the solution do you want to plot

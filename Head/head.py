@@ -23,21 +23,21 @@ class Sin2D(object):
         self.var = 'qq'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin2D/'
         self.number_of = 300
-        self.start     = .5
-        self.stop      = 3.0
+        self.start     = 0.01
+        self.stop      = 10.0
         self.dt        = 0.05
         self.cycles    = 80
         self.N = 16
-        self.qq = 0.00001
+        self.qq = 0.01
         self.beta = .6
         self.x_num_cell = 10.0
         self.y_num_cell = 10.0
         self.x_periodic = True
-        self.order = 2
+        self.order = 5
         self.dx = self.x_num_cell * 2.0 * pl.pi
         self.dy = self.y_num_cell * 2.0 * pl.pi
         #self.A = pl.zeros(2*self.N) +.5
-        self.A = 1.45
+        self.A = 1.34
 
         # Full trajectory or just Poincare sections
         self.sliced = False
@@ -145,15 +145,15 @@ class Sin1D(object):
         self.block_dir = ''
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
-        self.number_of = 100
-        self.start     = 0.1
-        self.stop      = 1.1
+        self.number_of = 400
+        self.start     = 0.0
+        self.stop      = 2.0
         self.dt        = 0.05
-        self.cycles    = 200
-        self.N = 1
-        self.qq = .00001
+        self.cycles    = 80
+        self.N = 20
+        self.qq = .01
         self.beta = .6
-        self.num_cell = 1000.0
+        self.num_cell = 3.0
         self.d = self.num_cell * 2.0 * pl.pi
         self.A = pl.zeros(2*self.N) +.5
 
