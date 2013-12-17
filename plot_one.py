@@ -96,11 +96,17 @@ def main():
     parser.add_argument('-t',action='store',dest = 't',type = str,required = True)
     # projection on to which axis
     parser.add_argument('-p',action='store',dest = 'p',type = str,required = False)
+    # plot every image or everyother or ...
+    # to plot evey image skip = 1. Skip cannot be less than 1 or else you get devide by zero
+    # error in the moddulus.
+    parser.add_argument('-s',action='store',dest = 's',type = int,required = False,default = 2)
+
     inargs = parser.parse_args()
     d = inargs.d
     f = inargs.f
     plot_type = inargs.t
     projection = inargs.p
+    skip = inargs.s
 
     'parsed arguments'
 
@@ -108,10 +114,6 @@ def main():
     if plot_type ==  'one':
         print('plot type is: one')
         make_one_movie =  True
-        # plot every image or everyother or ...
-        # to plot evey image skip = 1. Skip cannot be less than 1 or else you get devide by zero
-        # error in the moddulus.
-        skip = 5
         print('skip = ' + str(skip))
     if plot_type == 'lm':
         print('plot type is: last movie (lm)')
@@ -135,14 +137,14 @@ def main():
     # ultimitaly we want to work backwards from the final time so that if we want to we can cut off
     # transients but for now we are just going to look at the whole solution because
     # otherwise we are not going to have very many data points
-    # throw away first 5th
-    throw_away = 5
+    # throw away first 3rd:
+    throw_away = 3
     if plot_type == 'vzpc':
         make_vzpc = True
     if plot_type == 'tzpc':
         make_tzpc = True
     # spacio temporal chaos
-    if plot_type == 'stc'
+    if plot_type == 'stc':
         plot_stc()
         quit()
 

@@ -20,18 +20,18 @@ class Sin2D(object):
     # that each particle may have its own interaction with the field
     def __init__(self):
         self.block_dir = ''
-        self.var = 'qq'
+        self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin2D/'
         self.number_of = 300
-        self.start     = 0.01
-        self.stop      = 10.0
+        self.start     = .5
+        self.stop      = 1.45
         self.dt        = 0.05
-        self.cycles    = 80
-        self.N = 16
+        self.cycles    = 30
+        self.N = 50
         self.qq = 0.01
         self.beta = .6
-        self.x_num_cell = 10.0
-        self.y_num_cell = 10.0
+        self.x_num_cell = 1.0
+        self.y_num_cell = 1.0
         self.x_periodic = True
         self.order = 5
         self.dx = self.x_num_cell * 2.0 * pl.pi
@@ -671,6 +671,9 @@ def main():
     # FIN is the totatl number of blocks we are running. if we are running 500 blocks FIN = 499
     # -q shortq  
     print('qsub command: '+'qsub -v DIR='+to_run_object.block_dir+ ',FIN='+str(to_run_object.number_of-1)+ ',TOTITER='+str(totIter)+ ',SLICED='+str(to_run_object.sliced)+ ' -t 0-' +str(to_run_object.number_of-1)+ ' again.script')
+
+    ssh.connect('bluemoon-user2.uvm.edu',username='omyers',password='376.re.1873.oven')
+
     stdin,stdout,stderr = ssh.exec_command('qsub -v DIR='+to_run_object.block_dir+
             ',FIN='+str(to_run_object.number_of-1)+
             ',TOTITER='+str(totIter)+

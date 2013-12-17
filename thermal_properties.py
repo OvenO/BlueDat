@@ -78,7 +78,6 @@ def kenetic_energy():
     var_arr = pl.array([])
     # See paper j. chem phys., vol 120, No 1, 1 Jan 2004
     energy_stuff = pl.array([])
-    avg_energy_sqrd = pl.array([])
     for i,j in enumerate(os.listdir('.')):
         if 'poindat.txt' not in j:
             continue
@@ -131,7 +130,7 @@ def kenetic_energy():
     pl.scatter(var_arr,energy_stuff/4)
     #ax.set_xlim([.5,1.5])
     ax.set_xlabel(sweep_str,fontsize=30)
-    ax.set_ylabel(r'$\frac{\langle E^2 \rangle - \langle E \rangle ^ 2}{\langle E \rangle ^ 2}$',fontsize=30)
+    ax.set_ylabel(r'$\frac{\langle KE^2 \rangle - \langle KE \rangle ^ 2}{\langle KE \rangle ^ 2}$',fontsize=30)
     fig.tight_layout()
     fig.savefig('energy_stuff.png',dpi=300)
     pl.close(fig)
@@ -139,7 +138,141 @@ def kenetic_energy():
 def frequency(f):
     qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
 
-     
+
+# We know that the energy of the system when t=n pi/2  is only KE because the potential U(x,t) is
+# flat at those times. We need to slice at t=pi(2*n + 1/2) in order to actualy et PC sections though. 
+def zero_potential_pc():
+    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
+
+    data_file_name = 'sliced_energy_data.txt'
+    if data_file_name in os.listdir('.'):
+        data_file = open(data_file_name,'r')
+        # first line is labels
+        labels = data_file.readline()
+        plotting_data = pl.genfromtxt(data_file)
+        #first column sweep variables
+        var_arr = plotting_data[:,0]
+        # evergy_stuff is next coulumn
+        energy_stuff_1 = plotting_data[:,1]
+        energy_stuff_2 = plotting_data[:,2]
+        averages_1 = plotting_data[:,3]
+        averages_2 = plotting_data[:,4]
+        # std_arr is only for averages_2 
+        std_arr = plotting_data[:,5]
+
+    else:
+        data_file = open(data_file_name,'w')
+        data_file.write('sweep_var   energy_stuff_1   energy_stuff_2   averages_1   averages_2 standard_dev\n')
+
+        # how much of soluton do we want to use? 1 -> all, 0 -> none
+        # this can be bigger than in the unsliced ones becasue transients are more or less gone after
+        # several PCs anyway.
+        how_much = .8
+
+        # See paper j. chem phys., vol 120, No 1, 1 Jan 2004
+        # energy_stuff_1 and averages_1 do not asume that the velocites are independently
+        # distributed. These use above paper eqn 14
+        # energy_sruff_2 and averages_2 assume this is a thermal system and use above paper eqn 15
+        energy_stuff_1 = pl.array([])
+        energy_stuff_2 = pl.array([])
+        var_arr = pl.array([])
+        averages_1 = pl.array([])
+        averages_2 = pl.array([])
+        std_arr = pl.array([])
+        for i,j in enumerate(os.listdir('.')):
+            next_line = ''
+            if 'poindat.txt' not in j:
+                continue
+            cur_file = open(j,'r')
+            cur_sweep_var = float(cur_file.readline().split()[-1])
+            cur_data=pl.genfromtxt(cur_file)
+            cur_file.close()
+
+            next_line += str(cur_sweep_var)+ '   '
+            var_arr = pl.append(var_arr,cur_sweep_var)
+
+            # slice the data so we only have data for values of t=pi(2*n + 1/2)
+            new_data = pl.array([])
+            for i in range(len(cur_data)):
+                check_time = i*dt%(pl.pi*2.0)
+                if check_time < dt and check_time > 0.0:
+                    new_data = pl.append(new_data,cur_data[i,:])
+
+            cur_data = new_data.reshape(-1,Dim*2*N)
+
+            if Dim==1:
+                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2
+            if Dim==2:
+                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2+cur_data[int(-how_much*len(cur_data)):,N:2*N]**2
+            if i==0: print('shape of mag_vel_arr_sqrd'+str(pl.shape(mag_vel_arr_sqrd)))
+            
+            cur_en_stuff_2 = N*((mag_vel_arr_sqrd**2).mean() - (mag_vel_arr_sqrd.mean())**2)/((mag_vel_arr_sqrd.mean())**2)/4
+            energy_stuff_2 = pl.append(energy_stuff_2, cur_en_stuff_2)
+
+            cur_av_2 = pl.sqrt(N*mag_vel_arr_sqrd.mean()**2/4)
+            averages_2 = pl.append(averages_2,cur_av_2)
+            cur_std = pl.sqrt((N*mag_vel_arr_sqrd**2/4).std())
+            std_arr = pl.append(std_arr,cur_std)
+            
+            to_sum = 0.0
+            to_sum_avg_en = 0.0
+            for a in range(len(mag_vel_arr_sqrd[0,:])):
+                for b in range(len(mag_vel_arr_sqrd[0,:])):
+                    first = (mag_vel_arr_sqrd[:,a]*mag_vel_arr_sqrd[:,b]).mean()
+                    second = (mag_vel_arr_sqrd[:,a].mean())*(mag_vel_arr_sqrd[:,b].mean())
+                    
+                    to_sum += first - second
+                    to_sum_avg_en += second
+            
+            #print('to_sum: ' +str(to_sum))
+            #print('to_sum_avg_en: ' +str(to_sum_avg_en))
+            cur_en_stuff_1 = to_sum/to_sum_avg_en/4
+            energy_stuff_1 = pl.append(energy_stuff_1,cur_en_stuff_1)
+
+            
+            cur_av_1 = pl.sqrt(to_sum_avg_en/4)
+            averages_1 = pl.append(averages_1,cur_av_1)
+
+            next_line += str(cur_en_stuff_1)+'   '+str(cur_en_stuff_2)+'   '+str(cur_av_1)+ \
+                    '   '+str(cur_av_2)+'   '+str(cur_std)+'\n'
+            data_file.write(next_line)
+        
+    fig = pl.figure()
+    ax = fig.add_subplot(111)
+    # form of errorbar(x,y,xerr=xerr_arr,yerr=yerr_arr)
+    pl.scatter(var_arr,averages_1,c='r')
+    pl.errorbar(var_arr,averages_2,yerr=std_arr,c='b',ls='none',fmt='o')
+    ax.set_xlabel(sweep_str,fontsize=30)
+    ax.set_ylabel(r'$ \langle E \rangle $',fontsize=30)
+    fig.tight_layout()
+    fig.savefig('sliced_E_avg.png',dpi=300)
+    pl.close(fig)
+
+    fig = pl.figure()
+    ax = fig.add_subplot(111)
+    # deided by 4 comes from KE -> (1/2)**2
+    pl.scatter(var_arr,energy_stuff_1,c='r')
+    #pl.scatter(var_arr,energy_stuff_2,c='b')
+    #ax.set_xlim([0.0,1.6])
+    #ax.set_ylim([0.0,.04])
+    #ax.set_xlim([.5,1.5])
+    ax.set_xlabel(sweep_str,fontsize=30)
+    ax.set_ylabel(r'$\frac{\langle E^2 \rangle - \langle E \rangle ^ 2}{\langle E \rangle ^ 2}$',fontsize=30)
+    fig.tight_layout()
+    fig.savefig('sliced_energy_stuff_1.png',dpi=300)
+    pl.close(fig)
+    
+    fig = pl.figure()
+    ax = fig.add_subplot(111)
+    # deided by 4 comes from KE -> (1/2)**2
+    pl.scatter(var_arr,energy_stuff_2,c='b')
+    ax.set_xlabel(sweep_str,fontsize=30)
+    ax.set_ylabel(r'$\frac{\langle E^2 \rangle - \langle E \rangle ^ 2}{\langle E \rangle ^ 2}$',fontsize=30)
+    fig.tight_layout()
+    fig.savefig('sliced_energy_stuff_2.png',dpi=300)
+    pl.close(fig)
+
+    print('\a')
 
 def main():
 
@@ -171,7 +304,11 @@ def main():
     if plot_type == 'frequency':
         print('calling frequency')
         frequency(f)
-
+    # We know that the energy of the system when t=n pi/2  is only KE because the potential U(x,t) is
+    # flat at those times. We are going to aslo plot these results as a way fo observing total
+    # energy
+    if plot_type == 'sliced_E':
+        zero_potential_pc()
 
 if __name__ == '__main__':
     main()
