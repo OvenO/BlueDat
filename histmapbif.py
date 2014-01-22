@@ -91,13 +91,11 @@ def main():
         print('len(data): '+str(len(data)))
         print('shape(data): ' + str(pl.shape(data)))
         # modulus data by system length
-        print('data_1 print: ' + str(data))
         data[:,Dim*N:(Dim+1)*N] = data[:,Dim*N:(Dim+1)*N]%(x_num_cell*2.0*pl.pi)
-        print('data_2 print: ' + str(data))
         if Dim ==2:
             print('in Dim==2 section')
             data[:,(Dim+1)*N:(Dim+2)*N] = data[:,(Dim+1)*N:(Dim+2)*N]%(y_num_cell*2.0*pl.pi)
-        print('shape(data) after % x/y_num_cell: ' + str(pl.shape(data)))
+        #print('shape(data) after % x/y_num_cell: ' + str(pl.shape(data)))
         # if we want more poincare section then count back from the last checking to see if we are
         # at the t%2pl.pi=0 point and add data accordingly
         if num_pc != None:
@@ -110,16 +108,16 @@ def main():
                     print('passed_pc: '+str(passed_pc))
                     to_plot = pl.append(to_plot,data[-counting,slice_num*N:(slice_num+1)*N])
                     print('making to_plot')
-                    print(to_plot)
+                    #print(to_plot)
                     var_arr = pl.append(var_arr,build*var)
                     passed_pc += 1
                 counting +=1
         else:
             print('in else')
-            print('to be added to to_plot: '+ str(data[-1,slice_num*N:(slice_num+1)*N]))
+            #print('to be added to to_plot: '+ str(data[-1,slice_num*N:(slice_num+1)*N]))
             to_plot = pl.append(to_plot,data[-1,slice_num*N:(slice_num+1)*N])
             print('making to_plot')
-            print(to_plot)
+            #print(to_plot)
             #all_data = pl.append(all_data,data)
             var_arr = pl.append(var_arr,build*var)
     

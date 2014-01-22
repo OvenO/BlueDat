@@ -121,12 +121,12 @@ def main():
     if plot_type =='fv':
         print('plot type is: final velocity histogram(fv)')
         make_fv = True
-        want_bins = 20
+        want_bins = 15
         print('number of bins = '+str(want_bins))
     if plot_type =='fvm':
         print('plot type is: final velocity movie (histogram) (fv)')
         make_fvm = True
-        want_bins = 20
+        want_bins = 15
         print('number of bins = '+str(want_bins))
     # plot velocity averages and standard deviatinos 
     if plot_type == 'averages':
@@ -192,6 +192,17 @@ def main():
                     sol[:,3*N:4*N] = sol[:,3*N:4*N]%(y_num_cell*2.0*pl.pi)
                 
                 if make_averages:
+                    # slice the data so we only have data for values of t=pi(2*n + 1/2)
+                    new_data = pl.array([])
+                    for i in range(len(sol)):
+                        # This is getting values of time that are at makimum potentials!!! WRONG
+                        # check_time = i*dt%(pl.pi*2.0)
+                        check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
+                        if check_time < dt and check_time > 0.0:
+                            new_data = pl.append(new_data,sol[i,:])
+
+                    sol = new_data.reshape(-1,Dim*2*N)
+
                     temp_v = pl.array([])
                     temp_v = pl.append(temp_v,sol[int(len(sol)*avg_over):,:N])
                     avg_vels = pl.append(avg_vels,temp_v.mean())
@@ -202,6 +213,12 @@ def main():
                     #abs_d_data = np.abs(np.diff(sol))
                     #mask = np.hstack([ abs_d_data > abs_d_data.mean()+3*abs_d_data.std(), [False]])
                     #masked_data = np.ma.MaskedArray(sol, mask)
+
+                    if Dim == 1:
+                        print('shifting data using center_orbit() function in o_funcs')
+                        # this function centers the plot on the trajectorie with the smalles velocity
+                        # amplitude (only works for 1D for now)j
+                        sol = of.center_orbit(sol,N,Dim)
 
                     lm_fig = pl.figure()
                     lm_ax = lm_fig.add_subplot(111)
@@ -234,7 +251,7 @@ def main():
             #avges_ax.scatter(var_arr,avg_vels-std_vels,c='r',s=1)
             avges_ax.scatter(var_arr,std_vels**2,c='r',s=1)
             avges_fig.tight_layout()
-            avges_fig.savefig('average_vels.png',dpi=300)
+            avges_fig.savefig('sliced_average_vels.png',dpi=300)
 
    
     else:
@@ -322,19 +339,38 @@ def main():
                     r_ax.set_ylim(y_rng)
                     r_ax.set_xlabel(x_lbl,fontsize=30)
                     r_ax.set_ylabel(x_lbl,fontsize=30)
+                    #r_ax.set_xlim([450,550])
                     r_ax.scatter(sol[i,ax_num[0]*N:ax_num[1]*N],sol[i,ax_num[2]*N:ax_num[3]*N],c='b',s=1)
                     r_fig.tight_layout()
                     r_fig.savefig(f_num_str+'RunImages/Space_'+projection+'/%(number)04d.png'%{'number':i})
                     pl.close(r_fig)
 
         if make_fv:
-            # lets see what the velocity disrobution is when the potential is zero
-            # go_back =int(pl.pi/2.0/dt)
-            go_back = -1
-            print('number of data points going into histogram: ' +str(len(sol[-1,:N])))
+
+            ## slice the data so we only have data for values of t=pi(2*n + 1/2)
+            #new_data = pl.array([])
+            #for i in range(len(sol)):
+            #    # This is getting values of time that are at makimum potentials!!! WRONG
+            #    # check_time = i*dt%(pl.pi*2.0)
+            #    check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
+            #    if check_time < dt and check_time > 0.0:
+            #        new_data = pl.append(new_data,sol[i,:])
+
+            #sol = new_data.reshape(-1,Dim*2*N)
+            ##print('new sol first line: '+str(sol[0,:]))
+            ##print('new sol last line: '+str(sol[-1,:]))
+
+            avg_vels = pl.array([])
+            for i in range(len(sol)/10):
+                if i==0: continue
+                # for now take last half of these and average over them
+                avg_vels = pl.append(avg_vels,abs(sol[-i,:N]))
+
+            print('number of data points going into histogram: ' +str(len(avg_vels)))
             fv_fig = pl.figure()
             fv_ax = fv_fig.add_subplot(111)
-            pl.hist(sol[-go_back,:N],bins=want_bins)
+            want_bins = 15
+            pl.hist(avg_vels,bins=want_bins)
             fv_ax.set_xlabel(r'$v$'      ,fontsize=30)
             #fv_ax.set_ylabel(r'$$',fontsize=30)
             #fv_ax.scatter(sol[i,N:2*N]%d,sol[i,:N],c='b')

@@ -24,16 +24,16 @@ class Sin2D(object):
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin2D/'
         self.number_of = 300
         self.start     = .5
-        self.stop      = 1.45
+        self.stop      = 2.0
         self.dt        = 0.05
-        self.cycles    = 30
-        self.N = 50
+        self.cycles    = 100
+        self.N = 20
         self.qq = 0.01
         self.beta = .6
-        self.x_num_cell = 1.0
-        self.y_num_cell = 1.0
+        self.x_num_cell = 2.0
+        self.y_num_cell = 2.0
         self.x_periodic = True
-        self.order = 5
+        self.order = 2
         self.dx = self.x_num_cell * 2.0 * pl.pi
         self.dy = self.y_num_cell * 2.0 * pl.pi
         #self.A = pl.zeros(2*self.N) +.5
@@ -128,6 +128,248 @@ class Sin2D(object):
         os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/2DBlock/Old/')
         print 'self.block_dir'
         print self.block_dir
+        os.system('say files copied to cluster')  
+
+class One_Particle_Ensbl_Sin_1D(object):
+    # number_of -> number of blocks (usualy 500). start -> parameter starting poin. stop ->
+    # parameter stoping point (step size will be calculated). cycles-> runtime cycles. x_,vx_dim->
+    # dimensions of block of initial conditions in phase space. x_,vx_num number of points in the x and
+    # vx. The <>_corner variables define the lower left corner of the block in phase space
+    def __init__(self):
+        self.block_dir = ''
+        self.var = 'A'
+        self.script_dir= '/users/o/m/omyers/datasphere/ECproject/One_Particle_Sin_1D/'
+        self.number_of = 300
+        self.start     = 0.7
+        self.stop      = 1.375
+        self.dt        = 0.05
+        self.cycles    = 100
+        self.beta = .6
+        self.num_cell = 1.0
+        self.d = self.num_cell * 2.0 * pl.pi
+        self.A = .5
+        self.x_dim     = 6.28
+        self.vx_dim    = 6.0
+        self.vx_corner = -3.0
+        self.x_corner  = 0.0
+        self.vy_corner = 0.0
+        self.y_corner  = 0.0
+
+        self.x_num     = 60
+        self.vx_num    = 30
+        # Full trajectory or just Poincare sections
+        #self.sliced = False
+        self.sliced = True
+
+
+    def init_block(self):
+        if (self.x_num == 0) or (self.x_dim==0.0):
+            increment_x = 0.0
+            if(self.x_num == self.x_dim):
+                print('there is a descrepency between number and dimesions of block --> check to_run file')
+        else:
+            increment_x = self.x_dim/self.x_num 
+            print('increment x: ' + str(increment_x))
+
+        if (self.vx_num == 0) or (self.vx_dim==0.0):
+            increment_vx = 0.0
+            if(self.vx_num == self.vx_dim):
+                print('there is a descrepency between number and dimesions of block --> check to_run file')
+        else:
+            increment_vx = self.vx_dim/self.vx_num 
+
+
+
+        # find the amount we want to increase the parameter by
+        inc_param = (self.stop-self.start)/self.number_of
+    
+        cur_coef = self.start + inc_param
+    
+        get_make_dir(self)
+        
+        # make info file
+        info_file = open(self.block_dir + '/info.txt','w')
+        info_file.write('dir: '+str(self.block_dir)+'\nsurf: 1.0') 
+        info_file.write('\ndt: '+str(self.dt))
+        if self.var == 'beta':
+            info_file.write('\nbeta (damping): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nbeta (damping): '+str(self.beta))
+        if self.var == 'cycles': 
+            info_file.write('\ncycles (run time): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            info_file.write('\ncycles (run time): '+str(self.cycles))
+        if self.var == 'num_cell':
+            info_file.write('\nnum_cell (system length): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nnum_cell (system length): '+str(self.num_cell))
+        if self.var == 'A': 
+            info_file.write('\nA (interaction amplitude): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            if type(A)==float: 
+                info_file.write('\nA (interaction amplitude): '+str(self.A))
+            else: 
+                print('A NOT A FLOAT')
+                #info_file.write('\nA (interaction amplitude): '+str(min(self.A))+'-'+str(max(self.A)))
+        info_file.close()
+
+        print('--dir is: '+str(self.block_dir))
+
+        for l in range(self.number_of):
+            #make the file
+            cur_poin_file = open(self.block_dir+'/'+str(l)+'poindat.txt','w')
+    
+            #write the first few lines of the file
+            cur_poin_file.write('coef --> ' +str(cur_coef)+'\n')
+            cur_poin_file.write('ZONE I=something DATAPACKING=POINT\n')
+            
+            for kapa in range(self.vx_num):
+                for alpha in range(self.x_num+1):
+                    # write vx
+                    cur_poin_file.write(str(self.vx_corner + kapa*increment_vx)+ "  ")
+                    # vy
+                    cur_poin_file.write(str(self.vy_corner)+"  ")
+                    # x
+                    cur_poin_file.write(str(self.x_corner + alpha*increment_x)+"  ")
+                    # y
+                    cur_poin_file.write(str(self.y_corner))
+                    # write an enter
+                    cur_poin_file.write('\n')
+            
+            cur_poin_file.close()
+            cur_coef += inc_param
+
+        # now that all the file are made make an "Orig" directory in the block directory to store
+        # the origonal blocks of initial conditions. This way if something goes wrong we can pull
+        # them out and run again.py again by hand
+        os.system('mkdir ' + self.block_dir + '/Orig')
+        os.system('cp ' + self.block_dir +'/*.txt ' + self.block_dir + '/Orig/')
+        os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/2DBlock/Old/')
+        print self.block_dir
+
+class One_Particle_Ensbl_Sin_2D(object):
+    # number_of -> number of blocks (usualy 500). start -> parameter starting poin. stop ->
+    # parameter stoping point (step size will be calculated). cycles-> runtime cycles. x_,vx_dim->
+    # dimensions of block of initial conditions in phase space. x_,vx_num number of points in the x and
+    # vx. The <>_corner variables define the lower left corner of the block in phase space
+    def __init__(self):
+        self.block_dir = ''
+        self.var = 'A'
+        self.script_dir= '/users/o/m/omyers/datasphere/ECproject/One_Particle_Sin_2D/'
+        self.number_of = 30
+        self.start     = 0.0
+        self.stop      = 1.5
+        self.dt        = 0.05
+        self.cycles    = 10
+        self.beta = .6
+        self.x_num_cell = 1.0
+        self.y_num_cell = 1.0
+        self.dx = self.x_num_cell * 2.0 * pl.pi
+        self.dy = self.y_num_cell * 2.0 * pl.pi
+        self.A = .5
+        self.x_dim     = 6.28
+        self.y_dim    = 6.28
+        self.vx_corner = 0.0
+        self.x_corner  = 0.0
+        self.vy_corner = 0.0
+        self.y_corner  = 0.0
+
+        self.x_num     = 40
+        self.y_num    = 40
+        # Full trajectory or just Poincare sections
+        self.sliced = False
+
+
+    def init_block(self):
+        if (self.x_num == 0) or (self.x_dim==0.0):
+            increment_x = 0.0
+            if(self.x_num == self.x_dim):
+                print('there is a descrepency between number and dimesions of block --> check to_run file')
+        else:
+            increment_x = self.x_dim/self.x_num 
+            print('increment x: ' + str(increment_x))
+
+        if (self.y_num == 0) or (self.y_dim==0.0):
+            increment_y = 0.0
+            if(self.y_num == self.y_dim):
+                print('there is a descrepency between number and dimesions of block --> check to_run file')
+        else:
+            increment_y = self.y_dim/self.y_num 
+
+
+
+        # find the amount we want to increase the parameter by
+        inc_param = (self.stop-self.start)/self.number_of
+    
+        cur_coef = self.start + inc_param
+    
+        get_make_dir(self)
+        
+        # make info file
+        info_file = open(self.block_dir + '/info.txt','w')
+        info_file.write('dir: '+str(self.block_dir)+'\nsurf: 1.0') 
+        info_file.write('\ndt: '+str(self.dt))
+        if self.var == 'beta':
+            info_file.write('\nbeta (damping): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nbeta (damping): '+str(self.beta))
+        if self.var == 'cycles': 
+            info_file.write('\ncycles (run time): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            info_file.write('\ncycles (run time): '+str(self.cycles))
+        if self.var == 'x_num_cell':
+            info_file.write('\nx_num_cell (system length): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nx_num_cell (system length): '+str(self.x_num_cell))
+        if self.var == 'y_num_cell':
+            info_file.write('\ny_num_cell (system length): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\ny_num_cell (system length): '+str(self.y_num_cell))
+
+
+        if self.var == 'A': 
+            info_file.write('\nA (interaction amplitude): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            if type(A)==float: 
+                info_file.write('\nA (interaction amplitude): '+str(self.A))
+            else: 
+                print('A NOT A FLOAT')
+                #info_file.write('\nA (interaction amplitude): '+str(min(self.A))+'-'+str(max(self.A)))
+        info_file.close()
+
+        print('--dir is: '+str(self.block_dir))
+
+        for l in range(self.number_of):
+            #make the file
+            cur_poin_file = open(self.block_dir+'/'+str(l)+'poindat.txt','w')
+    
+            #write the first few lines of the file
+            cur_poin_file.write('coef --> ' +str(cur_coef)+'\n')
+            cur_poin_file.write('ZONE I=something DATAPACKING=POINT\n')
+            
+            for kapa in range(self.y_num+1):
+                for alpha in range(self.x_num+1):
+                    # write vx
+                    cur_poin_file.write(str(self.y_corner)+ "  ")
+                    # vy
+                    cur_poin_file.write(str(self.vy_corner)+"  ")
+                    # x
+                    cur_poin_file.write(str(self.x_corner + alpha*increment_x)+"  ")
+                    # y
+                    cur_poin_file.write(str(self.y_corner + kapa*increment_y)+ "  ")
+                    # write an enter
+                    cur_poin_file.write('\n')
+            
+            cur_poin_file.close()
+            cur_coef += inc_param
+
+        # now that all the file are made make an "Orig" directory in the block directory to store
+        # the origonal blocks of initial conditions. This way if something goes wrong we can pull
+        # them out and run again.py again by hand
+        os.system('mkdir ' + self.block_dir + '/Orig')
+        os.system('cp ' + self.block_dir +'/*.txt ' + self.block_dir + '/Orig/')
+        os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/2DBlock/Old/')
+        print self.block_dir
 
 
 class Sin1D(object):
@@ -145,15 +387,15 @@ class Sin1D(object):
         self.block_dir = ''
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
-        self.number_of = 400
+        self.number_of = 300
         self.start     = 0.0
-        self.stop      = 2.0
+        self.stop      = 1.5
         self.dt        = 0.05
-        self.cycles    = 80
+        self.cycles    = 120
         self.N = 20
         self.qq = .01
         self.beta = .6
-        self.num_cell = 3.0
+        self.num_cell = 100.0
         self.d = self.num_cell * 2.0 * pl.pi
         self.A = pl.zeros(2*self.N) +.5
 
@@ -630,6 +872,10 @@ def main():
         to_run_object = Sin1D()
     if key_word == 'Sin2D':
         to_run_object = Sin2D()
+    if key_word == 'Ensbl_Sin1D':
+        to_run_object = One_Particle_Ensbl_Sin_1D()
+    if key_word == 'Ensbl_Sin2D':
+        to_run_object = One_Particle_Ensbl_Sin_2D()
 
     
     # this initializes the block on this computer and then scp it to cluster
@@ -672,13 +918,15 @@ def main():
     # -q shortq  
     print('qsub command: '+'qsub -v DIR='+to_run_object.block_dir+ ',FIN='+str(to_run_object.number_of-1)+ ',TOTITER='+str(totIter)+ ',SLICED='+str(to_run_object.sliced)+ ' -t 0-' +str(to_run_object.number_of-1)+ ' again.script')
 
+    ssh = paramiko.SSHClient()
+    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect('bluemoon-user2.uvm.edu',username='omyers',password='376.re.1873.oven')
 
     stdin,stdout,stderr = ssh.exec_command('qsub -v DIR='+to_run_object.block_dir+
             ',FIN='+str(to_run_object.number_of-1)+
             ',TOTITER='+str(totIter)+
             ',SLICED='+str(to_run_object.sliced)+
-            ' -t 0-' +str(to_run_object.number_of-1)+ '\ '+
+            ' -t 0-' +str(to_run_object.number_of-1)+ 
             ' again.script')
     out_lines = stdout.readlines()
     err_lines = stderr.readlines()
@@ -689,6 +937,9 @@ def main():
 
     job_id = out_lines[0][:7]
     print('job id: ' + str(job_id))
+    if len(job_id)==0:
+        os.system('say job did not successfully run on cluster')
+    else: os.system('say job is successfully running on cluster')
 
     print('stdout lines: ' + str(out_lines))
     print('stderr lines: ' + str(err_lines))
@@ -703,9 +954,7 @@ def main():
     #print('WE MADE IT YAY')
 
     # a couple of audible bells to let me know its done
-    for i in range(5):
-        thetime.sleep(.5)
-        print('\a')
+    print('\a')
 
 if __name__ == '__main__':
     main()
