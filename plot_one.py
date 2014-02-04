@@ -214,17 +214,18 @@ def main():
                     #mask = np.hstack([ abs_d_data > abs_d_data.mean()+3*abs_d_data.std(), [False]])
                     #masked_data = np.ma.MaskedArray(sol, mask)
 
-                    if Dim == 1:
-                        print('shifting data using center_orbit() function in o_funcs')
-                        # this function centers the plot on the trajectorie with the smalles velocity
-                        # amplitude (only works for 1D for now)j
-                        sol = of.center_orbit(sol,N,Dim)
+                    #if Dim == 1:
+                        #print('shifting data using center_orbit() function in o_funcs')
+                        ## this function centers the plot on the trajectorie with the smalles velocity
+                        ## amplitude (only works for 1D for now)j
+                        #sol = of.center_orbit(sol,N,Dim)
 
                     lm_fig = pl.figure()
                     lm_ax = lm_fig.add_subplot(111)
                     lm_ax.set_title(sweep_str + '='+str(var))
                     lm_ax.set_xlabel(x_lbl,fontsize=30)
                     lm_ax.set_ylabel(y_lbl,fontsize=30)
+                    lm_ax.set_xlim([0.0,2.0*pl.pi])
                     # how much of the last part of the solution do you want to plot
                     amount = len(sol)-int(len(sol)/5.0)
                     lm_ax.scatter(sol[amount:,(ax_num[0])*N:(ax_num[1])*N],sol[amount:,(ax_num[2])*N:(ax_num[3])*N],c='k',s=1)
@@ -285,10 +286,15 @@ def main():
             tz_ax = tz_fig.add_subplot(111)
             tz_ax.set_xlabel(x_lbl,fontsize=30)
             tz_ax.set_ylabel(y_lbl,fontsize=30)
-            for i in range(len(sol)/throw_away,len(sol)):
+
+            count_pc = 0
+            #for i in range(len(sol)/throw_away,len(sol)):
+            for i in range(len(sol)):
                 if(((i*dt)%(2.0*pl.pi))<dt) or already_pc:
                     #tz_ax.set_ylim([-2.0,2.0])
                     tz_ax.scatter(sol[i,ax_num[0]*N:ax_num[1]*N],sol[i,ax_num[2]*N:ax_num[3]*N],c='b',s=1)
+                    count_pc+=1
+            print("number of Poincare sections in plot: " + str(count_pc))
             tz_fig.tight_layout()
             tz_fig.savefig(f_num_str+'RunImages/'+f_num_str+'tzpc.png')
             pl.close(tz_fig)

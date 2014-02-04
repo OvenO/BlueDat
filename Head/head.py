@@ -23,15 +23,15 @@ class Sin2D(object):
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin2D/'
         self.number_of = 300
-        self.start     = .5
-        self.stop      = 2.0
+        self.start     = 0.0
+        self.stop      = 2.7
         self.dt        = 0.05
-        self.cycles    = 100
-        self.N = 20
-        self.qq = 0.01
+        self.cycles    = 150
+        self.N = 4
+        self.qq = 1.0
         self.beta = .6
-        self.x_num_cell = 2.0
-        self.y_num_cell = 2.0
+        self.x_num_cell = 1.0
+        self.y_num_cell = 1.0
         self.x_periodic = True
         self.order = 2
         self.dx = self.x_num_cell * 2.0 * pl.pi
@@ -387,15 +387,15 @@ class Sin1D(object):
         self.block_dir = ''
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
-        self.number_of = 300
-        self.start     = 0.0
-        self.stop      = 1.5
-        self.dt        = 0.05
-        self.cycles    = 120
-        self.N = 20
-        self.qq = .01
+        self.number_of = 200
+        self.start     = 1.0
+        self.stop      = 1.4
+        self.dt        = 0.001
+        self.cycles    = 400
+        self.N = 4
+        self.qq = 1.0
         self.beta = .6
-        self.num_cell = 100.0
+        self.num_cell = 1.0
         self.d = self.num_cell * 2.0 * pl.pi
         self.A = pl.zeros(2*self.N) +.5
 
@@ -938,7 +938,7 @@ def main():
     job_id = out_lines[0][:7]
     print('job id: ' + str(job_id))
     if len(job_id)==0:
-        os.system('say job did not successfully run on cluster')
+        os.system('say job did not not not run on cluster')
     else: os.system('say job is successfully running on cluster')
 
     print('stdout lines: ' + str(out_lines))
