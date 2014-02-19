@@ -51,16 +51,8 @@ def ssheat():
             var_arr = pl.append(var_arr,cur_sweep_var)
 
             # slice the data so we only have data for values of t=pi(2*n + 1/2)
-            new_data = pl.array([])
-            for i in range(len(cur_data)):
-                # This is getting values of time that are at makimum potentials!!! WRONG
-                # check_time = i*dt%(pl.pi*2.0)
-                check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
-                if check_time < dt and check_time > 0.0:
-                    new_data = pl.append(new_data,cur_data[i,:])
-
-            cur_data = new_data.reshape(-1,Dim*2*N)
-
+            cur_data = of.get_zpps(cur_data,Dim,N,dt):
+                
             if Dim==1:
                 mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2
             if Dim==2:
@@ -196,15 +188,7 @@ def temp_granular(sliced):
 
             if sliced:
                 # slice the data so we only have data for values of t=pi(2*n + 1/2)
-                new_data = pl.array([])
-                for i in range(len(cur_data)):
-                    # This is getting values of time that are at makimum potentials!!! WRONG
-                    # check_time = i*dt%(pl.pi*2.0)
-                    check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
-                    if check_time < dt and check_time > 0.0:
-                        new_data = pl.append(new_data,cur_data[i,:])
-
-                cur_data = new_data.reshape(-1,Dim*2*N)
+                cur_data = of.get_zpps(cur_data,Dim,N,dt)
 
             if Dim==1:
                 mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2
@@ -440,16 +424,7 @@ def energy_fluctuation(keyword):
 
             if keyword == 'slice':
                 # slice the data so we only have data for values of t=pi(2*n + 1/2)
-                new_data = pl.array([])
-                for i in range(len(cur_data)):
-                    # This is getting values of time that are at makimum potentials!!! WRONG
-                    # check_time = i*dt%(pl.pi*2.0)
-                    # This is right
-                    check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
-                    if check_time < dt and check_time > 0.0:
-                        new_data = pl.append(new_data,cur_data[i,:])
-
-                cur_data = new_data.reshape(-1,Dim*2*N)
+                cur_data = of.get_zpps(cur_data,Dim,N,dt)
             
             if Dim==1:
                 mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2

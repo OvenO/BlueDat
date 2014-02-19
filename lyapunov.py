@@ -49,15 +49,42 @@ def get_first_init(x0,epsilon,particle,N):
 
 #**********************************************************************************************
 #**********************************************************************************************
-# function just finds the magnitude of the distance of the two input points
+# function just finds the magnitude of the distance of the two input points. This needs to be a
+# little intelegent to make sure the periodic boundary conditions are included corectly. Lets have
+# it return a boolean value specifying weather it was closer across the boundary or not.
 def distance(x1,x2,particle,N):
+    # see weather the particle is closer in the normal way or across the seam of the bounday.
+    x_normal =  abs(x1[N+particle]-x2[N+particle])
+    print('x_normal: ' + str(x_normal))
+    x_period =  abs(2.0*pl.pi - x_normal)
+    print('x_periodi: ' + str(x_period))
+    
+    if x_normal < x_period:
+        #print('x_normal < x_period (distance NOT across boundry is smaller)')
+        across_seam = False
+        x_sqrd = x_normal**2
+    if x_normal > x_period:
+        #print('x_normal > x_period (distance across boundry is smaller)')
+        across_seam = True
+        x_sqrd = x_period**2
+    
     vx_sqrd = (x1[particle]-x2[particle])**2
-    x_sqrd =  (x1[N+particle]-x2[N+particle])**2
-    return pl.sqrt(vx_sqrd + x_sqrd)
+
+    dist = pl.sqrt(vx_sqrd + x_sqrd)
+    
+    #if dist>2.0*pl.pi:
+    #    dist -= 2.0*pl.pi
+    
+    print('returning across_seam = ' +str(across_seam))
+    return dist, across_seam
 #**********************************************************************************************
 #**********************************************************************************************
-# this function needs both the final positions of the two trajectories and the variable eplilon wich
-# is the starting/reset DISTANCE of the two poinnts. jsee lab book #2 pg 59 for a
+     # gram schmidt orthogonalize ONLY the trajectories that have grown beyond
+     # first_epsilon to appropriat distances from fudicial. Set
+     # all others (ones that dont grow) back to their futicial conterpart positions. All
+     # together these will be iniitial conditinos for next run.
+
+# see lab book #2 pg 59 for a
 # more detailed explination. "renomalize" will retun a point that is on the line contecting the
 # final points of the trajectorys and will this new point will be a distance epsilon from the
 # unpurtubed trjectory (x_unpurt). x_putub is final position of purtubed trajectorie
@@ -65,17 +92,74 @@ def distance(x1,x2,particle,N):
 # For a detailed description of what we are doing in the "renormalize" see notebook 2 pg 117
 # (115,116 too if all particles might be chaotic but this is not neccassary)
 
-def renormalize(x_unpurt,x_purt,epsilon,particle,N):
+def renormalize(x_unpurt,x_purt,total_epsilon,N):
 
     xnew = pl.copy(x_unpurt)
+    
+    # first determine which trajectories get to small
+    # this variable is the amount by which a trajectory must grow otherwise it is going to get set
+    # to fiducial position and prbably will not grow after that 
+    check = total_epsilon/pl.sqrt(N)/2.0 
+    
+    # keep track of the index of particles that are "chaotic"
+    chaotic = pl.array([])
+    # keep track of their final distances too
+    chaotic_dists = pl.array([])
+    # now check
+    for l in range(N):
+        # what is the distace between the lth fiducial particle adn the perturbed?
+        lth_distance,across_seam = distance(x_unpurt,x_purt,l,N)
+        # if the distace is shorter across the seam of the boundary (across_seam = True) then set
+        # the purtubed particle position to +- 2pi so the points are next to eachother. if the
+        # purturbed particle position is less than the unpurturbed add 2pi. if the otherway around
+        # minus 2pi
+        if across_seam:
+            if x_unpurt[l+N] < x_purt[l+N]:
+                x_purt[l+N] = x_purt[l+N]-2.0*pl.pi
+            if x_unpurt[l+N] > x_purt[l+N]:
+                x_purt[l+N] = x_purt[l+N]+2.0*pl.pi
+            # check new distance
+            temp_dist,temp_across = distance(x_unpurt,x_purt,l,N)
+            print('fixed a distance in renormalize. New dist is: ' +str(temp_dist))
+        # after all this we need to re modulus the system --> at the end of this function
 
-    cur_final_dist = distance(x_unpurt,x_purt,particle,N)
-    # velocity
-    xnew[particle] = x_unpurt[particle] + (epsilon/cur_final_dist)*(x_purt[particle]-x_unpurt[particle])
-    # position
-    xnew[N+particle] = x_unpurt[N+particle] + (epsilon/cur_final_dist)*(x_purt[N+particle]-x_unpurt[N+particle])
+        if lth_distance < check:
+            # set velocity to fiducial
+            xnew[l] = x_unpurt[l]
+            # set position to fiducial
+            xnew[N+l] = x_unpurt[N+l]
+        else:
+            chaotic = pl.append(chaotic,l)
+            chaotic_dists = pl.append(chaotic_dists,lth_distance)
 
+    print('number of chaotic is: ' + str(len(chaotic)))
+
+    # If there are no chaotic paticles than it is still useful to measure the
+    # negative LE. To do this --> if there are no chaotic particle --> make a randome set of
+    # purturbed initial conditions just like whats done in for the very first set of initial
+    # conditions
+    if len(chaotic)==0:
+        for k in range(N):
+            xnew = get_first_init(xnew,total_epsilon/pl.sqrt(N),k,N)
+
+    else:
+        # The best we can do is split the total epsilon up evenly between the chaotic particles.
+        to_perturb = total_epsilon/pl.sqrt(float(len(chaotic)))
+        # where len(chaotic) is the number of chaotic particles
+
+        # enumerate chaotic for the indicies of particles to renormalize to distance to_perturb from
+        # fiducial
+        for n,m in enumerate(chaotic):
+            # particle m will be chaotic_dists[n] from fudical
+            # velocity
+            xnew[m] = x_unpurt[m] + (to_perturb/chaotic_dists[n])*(x_purt[m]-x_unpurt[m])
+            # position
+            xnew[N+m] = x_unpurt[N+m] + (to_perturb/chaotic_dists[n])*(x_purt[N+m]-x_unpurt[N+m])
+
+    # because of seam checking we need to re modulus the system
+    xnew[N:]=xnew[N:]%(2.0*pl.pi)
     return xnew
+
 #**********************************************************************************************
 #**********************************************************************************************
 # NOT GOOD FOR NEW VERSION
@@ -118,15 +202,15 @@ def main():
     # f is for file
     parser.add_argument('-f',action='store',dest = 'f',type = str, required = False)
     # n is for the particle of interest
-    parser.add_argument('-n',action='store',dest = 'n',type = int, required = True)
-    # eplsilon should be passable 
-    parser.add_argument('-e',action='store',dest = 'e',type = float, required = True)
+    #parser.add_argument('-n',action='store',dest = 'n',type = int, required = True)
+    # eplsilon should be passable. THis is total epsilon
+    parser.add_argument('-e',action='store',dest = 'e',type = float, required = False,default = 1e-8)
 
 
     inargs = parser.parse_args()
     d = inargs.d
     f = inargs.f
-    particle = inargs.n
+    #particle = inargs.n
 
     # each run's distances are sumed and stored
     sum_final_dist_sqrd_arr = pl.array([])
@@ -145,9 +229,6 @@ def main():
 
     data = pl.genfromtxt(file_object)
     print('shape of fiducial data before doing anything: ' +str(pl.shape(data)))
-
-    # just make sure we are in the right modulus space
-    #data[:,N:(2*N)] = data[:,N:(2*N)]%(2.0*pl.pi)
 
     # 1a)
     # first lets slice the data so that we have poincare sections of minimum field potential. This
@@ -171,17 +252,21 @@ def main():
                 checked=False
 
 
-    
     sliced_data = new_data.reshape(-1,2*N)
     print('shape of sliced fiducial data before doing anything: ' +str(pl.shape(data)))
+
+    sliced_data[:,N:] = sliced_data[:,N:]%(2.0*pl.pi)
 
     # for full data set just throw away the first few points so it lines up with the sliced data
     # startwise
     data = data[first_i:,:]
 
     # SETTING SOME OTHER VARIABLS NOW
-    epsilon = inargs.e
-    print('epsilon: ' + str(epsilon))
+    # the perturb distance for INDIVIDUAL particles is different from THE SYSTEM PURTERBATION
+    total_epsilon = inargs.e
+    first_epsilon = total_epsilon/pl.sqrt(N)
+    print('total_epsilon: ' + str(total_epsilon))
+    print('first_epsilon: ' + str(first_epsilon))
     # good
     #epsilon = 1.0e-10
     # works 
@@ -203,14 +288,17 @@ def main():
     # throw awway transients
     # fiducial run is probably not very long becasue of the need for a high time resolution so lets
     # throw awway the whole first half
-##### UNCOMMENT
-    # sliced_data = sliced_data[(len(sliced_data[:,0])/2):,:]
+    sliced_data = sliced_data[(len(sliced_data[:,0])/2):,:]
     print('shape of sliced fiducial data after getting rid of transients: ' +str(pl.shape(sliced_data)))
 
     # 3) get our initial conditions for the purturbed run
     fiducial_start = sliced_data[0,:]
-    # 4) purturb the chosen particle by epsilon
-    init = get_first_init(fiducial_start,epsilon,particle,N)
+    print('First fiducial: '+str(fiducial_start))
+    # 4) purturb all particles by first_epsilon
+    init = pl.copy(fiducial_start)
+    for i in range(N):
+        init = get_first_init(init,first_epsilon,i,N)
+    print('first purturbed initial conditions: '+str(init))
     # 5) Run puturbed version of system for a period
     elec = ec.Sin1D(qq,A,beta,x_num_cell)
 
@@ -241,14 +329,12 @@ def main():
         purt_end = purt_sol[-1,:]
         #purt_end = test_sol[-1,:]
 
-        
-
         first_fig = pl.figure()
         first_ax = first_fig.add_subplot(111)
         for gamma in range(N):
             first_ax.scatter(purt_sol[:,gamma+N],purt_sol[:,gamma],color="Red",s=5)
             first_ax.scatter(data[(int(2.0*pl.pi/.001)*(i-1)):(int(2.0*pl.pi/.001)*i),gamma+N],data[(int(2.0*pl.pi/.001)*(i-1)):(int(2.0*pl.pi/.001)*i),gamma],color="Blue",s=5)
-            if gamma == particle:
+            if gamma == 1:
                 first_ax.annotate('start',xy=(purt_sol[0,gamma+N],purt_sol[0,gamma]),xytext=(pl.pi/2,-1.5),arrowprops=dict(facecolor='black',shrink=0.05))
                 first_ax.annotate('stop' ,xy=(purt_sol[-1,gamma+N],purt_sol[-1,gamma]),xytext=(pl.pi/2,1.5)    ,arrowprops=dict(facecolor='black',shrink=0.05))
         first_ax.set_xlim([0.0,2.0*pl.pi])
@@ -277,30 +363,40 @@ def main():
         to_sum_sqrd_dist = 0.0
         print_str_dists = ''
         for j in range(N):
-            final_dist = distance(fiducial_end,purt_end,j,N)
+            final_dist,across_seam = distance(fiducial_end,purt_end,j,N)
             print_str_dists += str(final_dist)+' '
             # For Distance Method 2 must square final dist to get xi^2 + vi^2
             to_sum_sqrd_dist += final_dist**2
             # For Distance Method 1 just append the distance between fiducial and purtubed particl i.
             # (will reshape this arrasy later)... SQUARED? --> See notebood pg 115.
             final_dist_sqrd_arr = pl.append(final_dist_sqrd_arr,final_dist**2)
+
+
         print(print_str_dists)
         # append the summed distance
         print('to_sum_sqrd_dist: '+str(to_sum_sqrd_dist))
         sum_final_dist_sqrd_arr = pl.append(sum_final_dist_sqrd_arr,to_sum_sqrd_dist)
-        # 7) gram schmidt orthogonalize THE one trajectorie that we chose to epsilon of fudicial. Set
-        # all other particles back to their futicial conterpart positions. These will be iniitial conditinos for next run.
-        init = renormalize(fiducial_end,purt_end,epsilon,particle,N)
+        
+        # 7) gram schmidt orthogonalize ONLY the trajectories that have grown beyond
+        # first_epsilon to appropriat distances from fudicial. Set
+        # all others (ones that dont grow) back to their futicial conterpart positions. All
+        # together these will be iniitial conditinos for next run.
+        init = renormalize(fiducial_end,purt_end,total_epsilon,N)
+        print('renormalized... new initial conditions are: ' + str(init))
+        print('compair above to fiducial final position ->: ' + str(fiducial_end))
+        print('totat_epsilon: ' + str(total_epsilon))
+        print('one minus the other sqrd sqrted (should be total_epsilon): '+
+                str(pl.sqrt(((init-fiducial_end)**2).sum())))
 
-        watch_le += pl.log(abs(sum_final_dist_sqrd_arr[-1]/epsilon))
+        watch_le += pl.log(abs(sum_final_dist_sqrd_arr[-1]/total_epsilon))
         cur_avg = watch_le/i/period
         watch = pl.append(watch,cur_avg)
 
     # reshape final_dist_arr
     final_dist_sqrd_arr = final_dist_sqrd_arr.reshape(-1,N)
 
-    eps_arr = pl.zeros(len(sum_final_dist_sqrd_arr))+epsilon
-    le = pl.log(pl.sqrt(abs(sum_final_dist_sqrd_arr))/epsilon)/period
+    eps_arr = pl.zeros(len(sum_final_dist_sqrd_arr))+total_epsilon
+    le = pl.log(pl.sqrt(abs(sum_final_dist_sqrd_arr))/total_epsilon)/period
 
     print('mean LE (LE is): ' +str(le.mean()))
     print('standard deviation LE: ' +str(le.std()))

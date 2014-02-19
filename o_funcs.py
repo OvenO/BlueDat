@@ -5,6 +5,22 @@ import scipy as sp
 
 #***********************************************************************************************
 #***********************************************************************************************
+# This returns sliced data that is sliced at the zero potential poincare section (zpps)
+def get_zpps(sol,Dim,N,dt):
+    # slice the data so we only have data for values of t=pi(2*n + 1/2)
+    new_data = pl.array([])
+    for i in range(len(sol)):
+        # This is getting values of time that are at makimum potentials!!! WRONG
+        # check_time = i*dt%(pl.pi*2.0)
+        check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
+        if check_time < dt and check_time > 0.0:
+            new_data = pl.append(new_data,sol[i,:])
+    
+    return new_data.reshape(-1,Dim*2*N)
+
+
+#***********************************************************************************************
+#***********************************************************************************************
 # This function taks a multiparticle solution as an input. It returns a solution of the same form
 # but where the trajectory with the smallest average squared velocity is at the centre of the plot.
 # We are only going to be looking at the last quarter of the trajectory. There is no reason to look

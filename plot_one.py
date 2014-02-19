@@ -192,16 +192,7 @@ def main():
                     sol[:,3*N:4*N] = sol[:,3*N:4*N]%(y_num_cell*2.0*pl.pi)
                 
                 if make_averages:
-                    # slice the data so we only have data for values of t=pi(2*n + 1/2)
-                    new_data = pl.array([])
-                    for i in range(len(sol)):
-                        # This is getting values of time that are at makimum potentials!!! WRONG
-                        # check_time = i*dt%(pl.pi*2.0)
-                        check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
-                        if check_time < dt and check_time > 0.0:
-                            new_data = pl.append(new_data,sol[i,:])
-
-                    sol = new_data.reshape(-1,Dim*2*N)
+                    sol = of.get_zpps(sol,Dim,N)
 
                     temp_v = pl.array([])
                     temp_v = pl.append(temp_v,sol[int(len(sol)*avg_over):,:N])
@@ -234,6 +225,8 @@ def main():
                     pl.close(lm_fig)
                     
                 if make_fvm:
+                    sol = of.get_zpps(sol,Dim,N,dt)
+
                     fv_fig = pl.figure()
                     fv_ax = fv_fig.add_subplot(111)
                     fv_ax.hist(sol[-go_back,:N],bins=want_bins)

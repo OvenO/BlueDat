@@ -140,10 +140,10 @@ class One_Particle_Ensbl_Sin_1D(object):
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/One_Particle_Sin_1D/'
         self.number_of = 300
-        self.start     = 0.7
-        self.stop      = 1.375
+        self.start     = .7
+        self.stop      = 1.40
         self.dt        = 0.05
-        self.cycles    = 100
+        self.cycles    = 50
         self.beta = .6
         self.num_cell = 1.0
         self.d = self.num_cell * 2.0 * pl.pi
@@ -158,8 +158,11 @@ class One_Particle_Ensbl_Sin_1D(object):
         self.x_num     = 60
         self.vx_num    = 30
         # Full trajectory or just Poincare sections
-        #self.sliced = False
-        self.sliced = True
+        self.sliced = False
+        #self.sliced = True
+        # Just capture one full set of trajectories for the last cycle of the run. sliced must be
+        # False for this to work
+        self.full_last = True
 
 
     def init_block(self):
@@ -387,12 +390,12 @@ class Sin1D(object):
         self.block_dir = ''
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
-        self.number_of = 200
-        self.start     = 1.0
-        self.stop      = 1.4
-        self.dt        = 0.001
-        self.cycles    = 400
-        self.N = 4
+        self.number_of = 300
+        self.start     = 1.5
+        self.stop      = 2.70
+        self.dt        = 0.05
+        self.cycles    = 150
+        self.N = 6
         self.qq = 1.0
         self.beta = .6
         self.num_cell = 1.0
@@ -853,8 +856,11 @@ def get_make_dir(to__object):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--keyword',action='store',dest = 'keyword',type = str, required = True)
+    # option for submitting to shortq when testing
+    parser.add_argument('--shortq',action='store',dest = 'shortq',type = bool, required=False,default = False)
     inargs = parser.parse_args() 
     key_word = inargs.keyword
+    shortq = inargs.shortq
 
     to_run_file = open('to_run_'+key_word+'.txt','r')
      
@@ -916,18 +922,26 @@ def main():
     # qsub -v param1=val,param2=val,... script.sh
     # FIN is the totatl number of blocks we are running. if we are running 500 blocks FIN = 499
     # -q shortq  
-    print('qsub command: '+'qsub -v DIR='+to_run_object.block_dir+ ',FIN='+str(to_run_object.number_of-1)+ ',TOTITER='+str(totIter)+ ',SLICED='+str(to_run_object.sliced)+ ' -t 0-' +str(to_run_object.number_of-1)+ ' again.script')
 
     ssh = paramiko.SSHClient()
     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
     ssh.connect('bluemoon-user2.uvm.edu',username='omyers',password='376.re.1873.oven')
 
-    stdin,stdout,stderr = ssh.exec_command('qsub -v DIR='+to_run_object.block_dir+
-            ',FIN='+str(to_run_object.number_of-1)+
-            ',TOTITER='+str(totIter)+
-            ',SLICED='+str(to_run_object.sliced)+
-            ' -t 0-' +str(to_run_object.number_of-1)+ 
-            ' again.script')
+    qsub_cmd = 'qsub '  
+    if shortq:
+        qsub_cmd += '-q shortq '
+    qsub_cmd += '-v DIR='+to_run_object.block_dir+\
+            ',FIN='+str(to_run_object.number_of-1)+\
+            ',TOTITER='+str(totIter)+\
+            ',SLICED='+str(to_run_object.sliced)+\
+            ' -t 0-' +str(to_run_object.number_of-1)+\
+            ' again.script'
+    # put in extra option of full_last
+    if key_word == 'Ensbl_Sin1D':
+        qsub_cmd = qsub_cmd[:qsub_cmd.find('v')+1] + ' FULLLAST='+str(to_run_object.full_last)+','+qsub_cmd[qsub_cmd.find('v')+2:]
+    print('qsub command: '+qsub_cmd)
+    
+    stdin,stdout,stderr = ssh.exec_command(qsub_cmd)
     out_lines = stdout.readlines()
     err_lines = stderr.readlines()
 

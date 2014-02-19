@@ -11,7 +11,7 @@ def main():
     # how many time slice (ts) sections do we want to include in the images?
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', action = 'store', dest = 'n', type = int, default = 1)
-    parser.add_argument('-p', action = 'store', dest = 'p',type = int, default = 1830)
+    parser.add_argument('-p', action = 'store', dest = 'p',type = int, default = 1)
     inargs = parser.parse_args()
     
     num_ts = inargs.n
@@ -48,7 +48,7 @@ def main():
         print(i)
         
         data = np.genfromtxt(cur_file,comments="Z")
-        x = pl.append(x,data[-b_pts*num_ts:,2])
+        x = pl.append(x,data[-b_pts*num_ts:,2]%(2.0*pl.pi))
         A_arr = pl.append(A_arr,build*coef)
         
     if (paper):

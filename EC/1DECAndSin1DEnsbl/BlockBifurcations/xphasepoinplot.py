@@ -3,7 +3,7 @@ import os
 
 
 def main():
-    which = 1
+    which = 26
     thedata = open(str(which)+"poindat.txt","r")
     os.mkdir(str(which)+"PoinImages")
     os.chdir(str(which)+"PoinImages")

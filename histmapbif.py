@@ -6,6 +6,44 @@ import scipy as np
 import o_funcs as of
 import subprocess
 
+# The purpos of this function is to grab all the path names of all the files in different block
+# directories that all have the same N. We need to be slightly carful using this because several
+# things are based off of this assuption that N is the sam and the number of point of the sweep
+# variable are all the same.
+# Also this assums that all the directories in the given directory (d) is stuff you want in the
+# plot.
+# Function returns a list of all the paths.
+def go_deep():
+    print('going deep')
+
+    # get the list of all the Block_... directories that contain the fiels with the data
+    all_files = os.listdir(".")
+    all_block_dir = []
+    # filter out non Block* files
+    for i,j in enumerate(all_files):
+        if 'Block_' in j:
+            all_block_dir.append(j)
+            
+    # This is needs to be a little clever to avoid going into each one.
+    # by assuming that they are all have the name number of divisions of the sweep parameter we can
+    # just count the number of data fiels in one Block directory and then we know then names of
+    # rest.
+    print('counting sweep parameter divisions from directory: ' +all_block_dir[0])
+    # count the number of poindat fiels
+    num_runs = 0
+    for i,j in enumerate(os.listdir(all_block_dir[0])):
+        if "poindat" in j:
+            num_runs+=1
+    print('num_runs is: '+str(num_runs))
+
+    # initialize the list to store the final path names is
+    list_dir = [] 
+
+    for a,b in enumerate(all_block_dir):
+        for l in range(num_runs):
+            list_dir.append(b+'/'+str(l)+'poindat.txt')
+    
+    return list_dir
 
 def main():
 
@@ -19,10 +57,17 @@ def main():
     parser.add_argument('-p',action='store',dest = 'p',type = str, required = False, default = 'x')
     # grid size
     parser.add_argument('-g',action='store',dest = 'g',type = int, required = False, default = 300)
+    # This is going to be a unique option to collect AAAALLLLLL the data of several individual
+    # bifurcation runs (everything the same except random initial conditions) into one so that the
+    # diagram does not look so messy. The argument being passed is a directory --> no default
+    # option.
+    parser.add_argument('--together',action='store',dest='together',type = bool, required = False, default=False)
     inargs = parser.parse_args()
     d = inargs.d
     projection = inargs.p
     grid_size = inargs.g 
+    together = inargs.together
+
 
     num_pc = inargs.n
 
@@ -30,11 +75,17 @@ def main():
 
     os.chdir(d)
 
+    # need to go into one of the directories to get the system info if we are doing 'together'.
+    if together: os.chdir(os.listdir('.')[0])
+
     # get the  system info
     # note: if Dim = 1 y_num_cell -> ' No y ' and order -> 'polygamma'
     qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim = of.get_system_info()
     print('Dim is: ' +str(Dim))
     print('x_num_cell: ' + str(x_num_cell))
+
+    # need to get back out for later on
+    if together: os.chdir('..')
 
     # depending on the projection type we will determine "ax_num" variable. This number is an easy
     # way to controle whicn axis we are projecting onto by the way we slce the data. form is this:
@@ -63,16 +114,18 @@ def main():
         slice_num = Dim-1
         ax_str = r'$\dot{y}$'
     
+    if together:
+        list_dir = go_deep()
+    else:
+        all_dir = os.listdir(".")
+        list_dir = [] 
 
-    all_dir = os.listdir(".")
-    list_dir = [] 
-
-    num_runs = 0
-    for i,j in enumerate(all_dir):
-        if "poindat" in j:
-            list_dir.append(j)
-            num_runs+=1
-    print('num_runs is: '+str(num_runs))
+        num_runs = 0
+        for i,j in enumerate(all_dir):
+            if "poindat" in j:
+                list_dir.append(j)
+                num_runs+=1
+        print('num_runs is: '+str(num_runs))
             
    
     build = pl.zeros(N)+1.0
