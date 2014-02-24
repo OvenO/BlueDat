@@ -391,11 +391,11 @@ class Sin1D(object):
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
         self.number_of = 300
-        self.start     = 1.5
-        self.stop      = 2.70
+        self.start     = 2.0
+        self.stop      = 3.75
         self.dt        = 0.05
         self.cycles    = 150
-        self.N = 6
+        self.N = 7
         self.qq = 1.0
         self.beta = .6
         self.num_cell = 1.0

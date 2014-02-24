@@ -92,7 +92,7 @@ def distance(x1,x2,particle,N):
 # For a detailed description of what we are doing in the "renormalize" see notebook 2 pg 117
 # (115,116 too if all particles might be chaotic but this is not neccassary)
 
-def renormalize(x_unpurt,x_purt,total_epsilon,N):
+def old_renormalize(x_unpurt,x_purt,total_epsilon,N):
 
     xnew = pl.copy(x_unpurt)
     
@@ -159,6 +159,38 @@ def renormalize(x_unpurt,x_purt,total_epsilon,N):
     # because of seam checking we need to re modulus the system
     xnew[N:]=xnew[N:]%(2.0*pl.pi)
     return xnew
+
+#**********************************************************************************************
+#**********************************************************************************************
+# I am redoing the normalize function so that it treats all particle positions in what I belive to
+# be the propper way... The proper way being the vector with 2*N*D degrees of freedom. 
+    # Want to put the new purtubed (return) point at a distace epsilon from the fudicial trajectory
+    # along the axsis of greatest expansion. 
+def renormalize(x_unpurt,x_before,x_purt,total_epsilon,N):
+    # The trajectory we are going to be returning is going to be the new one for the next run. lets
+    # call it
+    x_new = pl.copy(x_unpert)
+    # copied it because we are going to add the small amounts to it to purturb it.
+
+    # lets find a vector pointing in the direction of the trajectories path. For this we need the
+    # fiducual point at t-dt, which is given to us in the function as x_before. find the vector
+    # between x_before and x_unpurt
+    traj_vec = x_unpurt-x_before 
+    # normalize it
+    traj_vec = traj_vec/pl.sqrt(pl.dot(traj_vec,traj_vec))
+    print('traj_vec magnitude (should be 1): ' + str(pl.sqrt(pl.dot(traj_vec,traj_vec))))
+
+    # Now lets see how close the vector pointing from the fidicial to the perturbed trajectorie is
+    # to orthogonal with the trajectory... should get closer to 1 as we check more because it should
+    # be aligning itself with the axis of greatest expansion and that should be orthogonal.
+    # First normalize the difference vector
+    diff_vec = x_unpurt - x_purt
+    # normalize it
+    diff_vec = diff_vec/pl.sqrt(pl.dot(diff_vec,diff_vec))
+    print('diff_vec magnitude (should be 1): ' + str(pl.sqrt(pl.dot(diff_vec,diff_vec))))
+    print('normalized(x_unpert-x_purt)dot(traj_vec)  (should get close to 0): '+ str(pl.dot(diff_vec,traj_vec)))
+
+    
 
 #**********************************************************************************************
 #**********************************************************************************************
@@ -239,6 +271,8 @@ def main():
 
     # data for values of t=pi(2*n + 1/2) (zero potential poincare seciton)
     new_data = pl.array([])
+    # also want data for time RIGHT BEFORE slice point --> why? --> see renormalize function
+    new_before = pl.array([])
     checked = True
     for i in range(len(data)):
         # This is getting values of time that are at makimum potentials!!! WRONG
@@ -247,12 +281,15 @@ def main():
         check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
         if check_time < dt and check_time > 0.0:
             new_data = pl.append(new_data,data[i,:])
+            new_before = pl.array(new_before,data[i-1,:])
             if checked:
                 first_i = i
                 checked=False
 
 
     sliced_data = new_data.reshape(-1,2*N)
+    sliced_before = new_before.reshape(-1,2*N)
+
     print('shape of sliced fiducial data before doing anything: ' +str(pl.shape(data)))
 
     sliced_data[:,N:] = sliced_data[:,N:]%(2.0*pl.pi)
@@ -326,6 +363,8 @@ def main():
 
         # 6) measure the distance between the fiducial trajectores and the new trajectories after the one period
         fiducial_end = sliced_data[i,:]
+        before_end = sliced_before[i,:]
+
         purt_end = purt_sol[-1,:]
         #purt_end = test_sol[-1,:]
 
@@ -381,7 +420,7 @@ def main():
         # first_epsilon to appropriat distances from fudicial. Set
         # all others (ones that dont grow) back to their futicial conterpart positions. All
         # together these will be iniitial conditinos for next run.
-        init = renormalize(fiducial_end,purt_end,total_epsilon,N)
+        init = renormalize(fiducial_end,before_end,purt_end,total_epsilon,N)
         print('renormalized... new initial conditions are: ' + str(init))
         print('compair above to fiducial final position ->: ' + str(fiducial_end))
         print('totat_epsilon: ' + str(total_epsilon))
