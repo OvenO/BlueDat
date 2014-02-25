@@ -1,0 +1,2 @@
+# MB1DEC is just the manybody 1DEC
+# for now all of the parameters are set in the MB1DEC class in head.py

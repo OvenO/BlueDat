@@ -1,0 +1,2 @@
+# Sin1D is manybody 
+# for now all of the parameters are set in the Sin1D class in head.py

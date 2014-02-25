@@ -80,6 +80,8 @@ poincar.txt
 OldSingPltTrag/
 BlockTrag/
 data.txt
+# trying to ommit all the Block directories
+Block_*/
 
 # imovie files #
 ################
