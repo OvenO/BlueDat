@@ -20,13 +20,35 @@ import ECclass as ec
 
 
 
+#**********************************************************************************************
+#**********************************************************************************************
+# this function takes the fudicial and purtubed points (x1,x2) of particles and returns them having
+# fixed seam problems with the boundary conditions. The only thing to remember when using this
+# function is that at some point after calling it you need to re-modulus the system to get
+# everything back into place.
+def shuff(x_unpurt,x_purt,N):
+    for l in range(N):
+        # what is the distace between the lth fiducial particle adn the perturbed?
+        lth_distance,across_seam = distance(x_unpurt,x_purt,l,N)
+        # if the distace is shorter across the seam of the boundary (across_seam = True) then set
+        # the purtubed particle position to +- 2pi so the points are next to eachother. if the
+        # purturbed particle position is less than the unpurturbed add 2pi. if the otherway around
+        # minus 2pi
+        if across_seam:
+            if x_unpurt[l+N] < x_purt[l+N]:
+                x_purt[l+N] = x_purt[l+N]-2.0*pl.pi
+            if x_unpurt[l+N] > x_purt[l+N]:
+                x_purt[l+N] = x_purt[l+N]+2.0*pl.pi
+            # check new distance
+            temp_dist,temp_across = distance(x_unpurt,x_purt,l,N)
+            print('fixed a distance in shuff. New dist is: ' +str(temp_dist))
+    return x_unpurt,x_purt
 
 #**********************************************************************************************
 #**********************************************************************************************
 # Here we will find a second point that is some small distace (epsilon) from the x0 point.
 # We need this function because we want the distace to be epsilon but the position about x0 to be
 # random
-# Particle variable is the particle we want to purturb
 # N is the number of particles 
 def get_first_init(x0,epsilon,particle,N):
     x_new = pl.copy(x0)
@@ -36,20 +58,32 @@ def get_first_init(x0,epsilon,particle,N):
     
     # we will use a change of coordinates to get the location of the particle relative to x0. First
     # we just find some random point a distace epsilon from the origin.
-    theta = random.random()*2.0*pl.pi
-    x = epsilon*pl.cos(theta)
-    vx = epsilon*pl.sin(theta)
+    # need 2DN random angles 
+    angle_arr = pl.array([])
+    purturbs = pl.array([])
 
-    x_new[particle] = x0[particle]+vx
-    x_new[N+particle] = x0[N+particle]+x
+    # This is just an n-sphere 
+    for i in range(2*N):
+        angle_arr = pl.append(angle_arr,random.random()*2.0*pl.pi)
+        cur_purt = epsilon
+        for a,b in enumerate(angle_arr[:-1]):
+            cur_purt *= pl.sin(b)
+        if i == (2*N-1):
+            cur_purt = pl.sin(angle_arr[i])
+        else:
+            cur_purt = pl.cos(angle_arr[i])
 
-    print('randomly purturbed initial: ' + str(x0))
-    
-    return x_new
+        purturbs = pl.append(purturbs,cur_purt)
+
+    print('sqrt of sum of squars should be epsilon -> is it? --> ' +str(pl.sqrt(pl.dot(purturbs,purturbs))))
+    print('len(purturbs) == 2N ? ' +str(len(purturbs)==(2*N)))
+
+    return x_new+purturbs
 
 #**********************************************************************************************
 #**********************************************************************************************
-# function just finds the magnitude of the distance of the two input points. This needs to be a
+# function just finds the magnitude of the distance of the two individual particles. Important for
+# dealling with some of the boundary conditions problems in renormalize. This needs to be a
 # little intelegent to make sure the periodic boundary conditions are included corectly. Lets have
 # it return a boolean value specifying weather it was closer across the boundary or not.
 def distance(x1,x2,particle,N):
@@ -77,6 +111,19 @@ def distance(x1,x2,particle,N):
     
     print('returning across_seam = ' +str(across_seam))
     return dist, across_seam
+#**********************************************************************************************
+#**********************************************************************************************
+# full distace works with the full vectors representing the positions off al particles, x1 and x2
+# being the fiducial and perturbed trajectories. Right now this fuctino is very simple but it's
+# possible we might have some minor complicatoins to deal with which is why we are making it a
+# juction instead of doing it inline in main().
+def full_distace(x1,x2,N):
+    # make sure the seam across the periodic boundary conditions isn't messing stuff up too much
+    x1,x2 = shuff(x1,x2,N)
+    return pl.sqrt(pl.dot(x2-x1,x2-x1))
+
+
+
 #**********************************************************************************************
 #**********************************************************************************************
      # gram schmidt orthogonalize ONLY the trajectories that have grown beyond
@@ -167,6 +214,10 @@ def old_renormalize(x_unpurt,x_purt,total_epsilon,N):
     # Want to put the new purtubed (return) point at a distace epsilon from the fudicial trajectory
     # along the axsis of greatest expansion. 
 def renormalize(x_unpurt,x_before,x_purt,total_epsilon,N):
+    # BEFORE ANYTHING: make sure particles near boundaries are shuffeled into places where where the
+    # seam is not between any purturbed and fudicial trajectories.
+    x_unpurt,x_purt = shuff(x_unpert,x_purt)
+
     # The trajectory we are going to be returning is going to be the new one for the next run. lets
     # call it
     x_new = pl.copy(x_unpert)
@@ -189,6 +240,10 @@ def renormalize(x_unpurt,x_before,x_purt,total_epsilon,N):
     diff_vec = diff_vec/pl.sqrt(pl.dot(diff_vec,diff_vec))
     print('diff_vec magnitude (should be 1): ' + str(pl.sqrt(pl.dot(diff_vec,diff_vec))))
     print('normalized(x_unpert-x_purt)dot(traj_vec)  (should get close to 0): '+ str(pl.dot(diff_vec,traj_vec)))
+
+    # for now lets just return a point moved back along the difference vector. no gram shmidt or
+    # anything.
+    return n_new + epsilon*diff_vec
 
     
 
@@ -244,10 +299,8 @@ def main():
     f = inargs.f
     #particle = inargs.n
 
-    # each run's distances are sumed and stored
-    sum_final_dist_sqrd_arr = pl.array([])
-    # individual particles distances from fidicual are stored in a matrix
-    final_dist_sqrd_arr = pl.array([])
+    # distances from fidicual are stored 
+    final_dist_arr = pl.array([])
 
     # get system info
     qq,dt,beta,A_sweep_str,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim = of.get_system_info()
@@ -332,9 +385,8 @@ def main():
     fiducial_start = sliced_data[0,:]
     print('First fiducial: '+str(fiducial_start))
     # 4) purturb all particles by first_epsilon
-    init = pl.copy(fiducial_start)
-    for i in range(N):
-        init = get_first_init(init,first_epsilon,i,N)
+    init = get_first_init(fiducial_start,first_epsilon,i,N)
+
     print('first purturbed initial conditions: '+str(init))
     # 5) Run puturbed version of system for a period
     elec = ec.Sin1D(qq,A,beta,x_num_cell)
@@ -354,7 +406,8 @@ def main():
         #print('init: ' + str(init))
         #print('sliced_data[i-1,:] = ' + str(sliced_data[i-1,:]))
         
-        ## Lets see what happens when we run the fudicial trajectory again with
+        # Lets see what happens when we run the fudicial trajectory again with (see how much the
+        # time step maters).
         #test_sol = odeint(elec.f,sliced_data[i-1,:],t)
         #test_sol[:,N:(2*N)] = test_sol[:,N:(2*N)]%(2.0*pl.pi)
 
@@ -386,36 +439,11 @@ def main():
         pl.close(first_fig)
 
 
-        # (for more than notes here see notebood pg 115)
-        # this is for summing the distances. We need to be carful summing the distances. If we think
-        # about the system as a "single particle" with 2*N*Dim degrees of freedom than the puturbed
-        # distance d will be d = sqrt(x1^2 + x2^2 + x3^3 + ... xN^2). This is different than
-        # sqrt(position_1^2 + vel_1^2) + sqrt(position_2^2 + vel_2^2) + ... sqrt(position_N^2 + vel_N^2)
-        # So...
-        # Distance Method 1) 
-        # We will store the distances in phase space between individual particles of the purturbed and
-        # fiducial run to know wich particles are stable. Then we can find the LE of those individual
-        # particles.
-        # Distance Method 2) 
-        # We will also store the purturbed "distance" of the whole system from the fiducial run also
-        # and calculate the LE of this.
-        to_sum_sqrd_dist = 0.0
-        print_str_dists = ''
-        for j in range(N):
-            final_dist,across_seam = distance(fiducial_end,purt_end,j,N)
-            print_str_dists += str(final_dist)+' '
-            # For Distance Method 2 must square final dist to get xi^2 + vi^2
-            to_sum_sqrd_dist += final_dist**2
-            # For Distance Method 1 just append the distance between fiducial and purtubed particl i.
-            # (will reshape this arrasy later)... SQUARED? --> See notebood pg 115.
-            final_dist_sqrd_arr = pl.append(final_dist_sqrd_arr,final_dist**2)
+        # get the distance between the fudicial and the purturbed trajectory
+        final_dist = full_distace(fiducial_end,purt_end,N):
+        print('final distance: ' +str(final_dist))
+        final_dist_arr = pl.append(final_dist_arr,final_dist)
 
-
-        print(print_str_dists)
-        # append the summed distance
-        print('to_sum_sqrd_dist: '+str(to_sum_sqrd_dist))
-        sum_final_dist_sqrd_arr = pl.append(sum_final_dist_sqrd_arr,to_sum_sqrd_dist)
-        
         # 7) gram schmidt orthogonalize ONLY the trajectories that have grown beyond
         # first_epsilon to appropriat distances from fudicial. Set
         # all others (ones that dont grow) back to their futicial conterpart positions. All
