@@ -50,7 +50,7 @@ def shuff(x_unpurt,x_purt,N):
 # We need this function because we want the distace to be epsilon but the position about x0 to be
 # random
 # N is the number of particles 
-def get_first_init(x0,epsilon,particle,N):
+def get_first_init(x0,epsilon,N):
     x_new = pl.copy(x0)
     print('getting the first initial condition')
     print('fiducial initial: '+str(x0))
@@ -353,10 +353,8 @@ def main():
 
     # SETTING SOME OTHER VARIABLS NOW
     # the perturb distance for INDIVIDUAL particles is different from THE SYSTEM PURTERBATION
-    total_epsilon = inargs.e
-    first_epsilon = total_epsilon/pl.sqrt(N)
-    print('total_epsilon: ' + str(total_epsilon))
-    print('first_epsilon: ' + str(first_epsilon))
+    epsilon = inargs.e
+    print('epsilon: ' + str(epsilon))
     # good
     #epsilon = 1.0e-10
     # works 
@@ -384,8 +382,8 @@ def main():
     # 3) get our initial conditions for the purturbed run
     fiducial_start = sliced_data[0,:]
     print('First fiducial: '+str(fiducial_start))
-    # 4) purturb all particles by first_epsilon
-    init = get_first_init(fiducial_start,first_epsilon,i,N)
+    # 4) purturb all particles by epsilon
+    init = get_first_init(fiducial_start,epsilon,i,N)
 
     print('first purturbed initial conditions: '+str(init))
     # 5) Run puturbed version of system for a period
@@ -400,9 +398,8 @@ def main():
     #for i in range(1,len(sliced_data)-1):
     for i in range(1,50):
         print(i)
-
         purt_sol = odeint(elec.f,init,t)
-        
+
         #print('init: ' + str(init))
         #print('sliced_data[i-1,:] = ' + str(sliced_data[i-1,:]))
         
@@ -421,22 +418,22 @@ def main():
         purt_end = purt_sol[-1,:]
         #purt_end = test_sol[-1,:]
 
-        first_fig = pl.figure()
-        first_ax = first_fig.add_subplot(111)
-        for gamma in range(N):
-            first_ax.scatter(purt_sol[:,gamma+N],purt_sol[:,gamma],color="Red",s=5)
-            first_ax.scatter(data[(int(2.0*pl.pi/.001)*(i-1)):(int(2.0*pl.pi/.001)*i),gamma+N],data[(int(2.0*pl.pi/.001)*(i-1)):(int(2.0*pl.pi/.001)*i),gamma],color="Blue",s=5)
-            if gamma == 1:
-                first_ax.annotate('start',xy=(purt_sol[0,gamma+N],purt_sol[0,gamma]),xytext=(pl.pi/2,-1.5),arrowprops=dict(facecolor='black',shrink=0.05))
-                first_ax.annotate('stop' ,xy=(purt_sol[-1,gamma+N],purt_sol[-1,gamma]),xytext=(pl.pi/2,1.5)    ,arrowprops=dict(facecolor='black',shrink=0.05))
-        first_ax.set_xlim([0.0,2.0*pl.pi])
-        first_ax.set_ylim([-2.0,2.0])
-        #first_ax.set_xlabel("$x_1$",fontsize=25)
-        #first_ax.set_ylabel("$x_2$",fontsize=25)
-        #first_ax.set_xlim([0,2*pl.pi])
-        #first_ax.set_ylim([-1.3,1.3])
-        first_fig.savefig('WatchingLE/'+str(i)+".png")
-        pl.close(first_fig)
+        #first_fig = pl.figure()
+        #first_ax = first_fig.add_subplot(111)
+        #for gamma in range(N):
+        #    first_ax.scatter(purt_sol[:,gamma+N],purt_sol[:,gamma],color="Red",s=5)
+        #    first_ax.scatter(data[(int(2.0*pl.pi/.001)*(i-1)):(int(2.0*pl.pi/.001)*i),gamma+N],data[(int(2.0*pl.pi/.001)*(i-1)):(int(2.0*pl.pi/.001)*i),gamma],color="Blue",s=5)
+        #    if gamma == 1:
+        #        first_ax.annotate('start',xy=(purt_sol[0,gamma+N],purt_sol[0,gamma]),xytext=(pl.pi/2,-1.5),arrowprops=dict(facecolor='black',shrink=0.05))
+        #        first_ax.annotate('stop' ,xy=(purt_sol[-1,gamma+N],purt_sol[-1,gamma]),xytext=(pl.pi/2,1.5)    ,arrowprops=dict(facecolor='black',shrink=0.05))
+        #first_ax.set_xlim([0.0,2.0*pl.pi])
+        #first_ax.set_ylim([-2.0,2.0])
+        ##first_ax.set_xlabel("$x_1$",fontsize=25)
+        ##first_ax.set_ylabel("$x_2$",fontsize=25)
+        ##first_ax.set_xlim([0,2*pl.pi])
+        ##first_ax.set_ylim([-1.3,1.3])
+        #first_fig.savefig('WatchingLE/'+str(i)+".png")
+        #pl.close(first_fig)
 
 
         # get the distance between the fudicial and the purturbed trajectory
@@ -444,26 +441,21 @@ def main():
         print('final distance: ' +str(final_dist))
         final_dist_arr = pl.append(final_dist_arr,final_dist)
 
-        # 7) gram schmidt orthogonalize ONLY the trajectories that have grown beyond
-        # first_epsilon to appropriat distances from fudicial. Set
-        # all others (ones that dont grow) back to their futicial conterpart positions. All
-        # together these will be iniitial conditinos for next run.
-        init = renormalize(fiducial_end,before_end,purt_end,total_epsilon,N)
+        # 7) set up new initial condition
+        init = renormalize(fiducial_end,before_end,purt_end,epsilon,N)
         print('renormalized... new initial conditions are: ' + str(init))
         print('compair above to fiducial final position ->: ' + str(fiducial_end))
-        print('totat_epsilon: ' + str(total_epsilon))
-        print('one minus the other sqrd sqrted (should be total_epsilon): '+
+        print('epsilon: ' + str(epsilon))
+        print('one minus the other sqrd sqrted (should be epsilon): '+
                 str(pl.sqrt(((init-fiducial_end)**2).sum())))
 
-        watch_le += pl.log(abs(sum_final_dist_sqrd_arr[-1]/total_epsilon))
+        watch_le += pl.log(final_dist_arr[-1]/epsilon)
         cur_avg = watch_le/i/period
         watch = pl.append(watch,cur_avg)
 
-    # reshape final_dist_arr
-    final_dist_sqrd_arr = final_dist_sqrd_arr.reshape(-1,N)
 
-    eps_arr = pl.zeros(len(sum_final_dist_sqrd_arr))+total_epsilon
-    le = pl.log(pl.sqrt(abs(sum_final_dist_sqrd_arr))/total_epsilon)/period
+    eps_arr = pl.zeros(len(final_dist_arr))+epsilon
+    le = pl.log(pl.sqrt(abs(final_dist_arr))/epsilon)/period
 
     print('mean LE (LE is): ' +str(le.mean()))
     print('standard deviation LE: ' +str(le.std()))
