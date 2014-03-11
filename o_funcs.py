@@ -5,16 +5,113 @@ import scipy as sp
 
 #***********************************************************************************************
 #***********************************************************************************************
+
+
+#***********************************************************************************************
+#***********************************************************************************************
+#Big ol' class for system parameters so a given analysis doesn't have to wory about variable passing
+class anal_run():
+
+    def __init__(self):
+
+        self.list_dir = []
+        self.together = False
+
+    def get_info(self):
+        # need to go into one of the directories to get the system info if we are doing 'together'.
+        if self.together: 
+            we_not_in = True
+            where_in_list = 0
+            list_dir = os.listdir('.')
+            while we_not_in:
+                if 'Block_' in list_dir[where_in_list]:
+                    os.chdir(os.listdir('.')[where_in_list])
+                    we_not_in = False
+                where_in_list += 1
+
+        self.qq,\
+            self.dt,\
+            self.beta,\
+            self.A,\
+            self.cycles,\
+            self.N,\
+            self.x_num_cell,\
+            self.y_num_cell,\
+            self.order,\
+            self.sweep_str,\
+            self.Dim = get_system_info()
+
+    # returns list of  poindat files if we are doing normal run otherwise...
+    # The purpos of this function is to grab all the path names of all the files in different block
+    # directories that all have the same N. We need to be slightly carful using this because several
+    # things are based off of this assuption that N is the sam and the number of point of the sweep
+    # variable are all the same.
+    # Also this assums that all the directories in the given directory (d) is stuff you want in the
+    # plot.
+    # Function returns a list of all the paths.
+    def set_list_dir(self):
+            
+        # need to get back out for later on
+        if self.together: 
+            os.chdir('..')
+
+            print('going deep')
+    
+            # get the list of all the Block_... directories that contain the fiels with the data
+            all_files = os.listdir(".")
+            all_block_dir = []
+            # filter out non Block* files
+            for i,j in enumerate(all_files):
+                if 'Block_' in j:
+                    all_block_dir.append(j)
+                    
+            # This is needs to be a little clever to avoid going into each one.
+            # by assuming that they are all have the name number of divisions of the sweep parameter we can
+            # just count the number of data fiels in one Block directory and then we know then names of
+            # rest.
+            print('counting sweep parameter divisions from directory: ' +all_block_dir[0])
+            # count the number of poindat fiels
+            num_runs = 0
+            for i,j in enumerate(os.listdir(all_block_dir[0])):
+                if "poindat" in j:
+                    num_runs+=1
+            print('num_runs is: '+str(num_runs))
+    
+            # initialize the list to store the final path names is
+            list_dir = [] 
+    
+            for a,b in enumerate(all_block_dir):
+                for l in range(num_runs):
+                    list_dir.append(b+'/'+str(l)+'poindat.txt')
+
+        else:
+            all_dir = os.listdir(".")
+            list_dir = [] 
+
+            num_runs = 0
+            for i,j in enumerate(all_dir):
+                if "poindat" in j:
+                    list_dir.append(j)
+                    num_runs+=1
+            print('num_runs is: '+str(num_runs))
+            self.num_runs = num_runs
+       
+        self.list_dir = list_dir
+
+
+
+#***********************************************************************************************
+#***********************************************************************************************
 # This returns sliced data that is sliced at the zero potential poincare section (zpps)
 def get_zpps(sol,Dim,N,dt):
     # slice the data so we only have data for values of t=pi(2*n + 1/2)
-    new_data = pl.array([])
+    new_data = sp.array([])
     for i in range(len(sol)):
-        # This is getting values of time that are at makimum potentials!!! WRONG
+        # This is getting values of time that are at maximum potentials!!! WRONG
         # check_time = i*dt%(pl.pi*2.0)
-        check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
+        check_time = (i*dt+sp.pi/2.0)%(sp.pi*2.0)
         if check_time < dt and check_time > 0.0:
-            new_data = pl.append(new_data,sol[i,:])
+            new_data = sp.append(new_data,sol[i,:])
     
     return new_data.reshape(-1,Dim*2*N)
 

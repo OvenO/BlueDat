@@ -4,8 +4,6 @@ from scipy.integrate import odeint
 from scipy.integrate import ode
 import numpy
 
-
-
 class surfCentreLineApx(object):
     def __init__(self,coef,k,w,drgCoef,dt):
         self.dt = dt 

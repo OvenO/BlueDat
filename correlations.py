@@ -42,7 +42,7 @@ def make_int_c_sqrd_plot(v):
 
         # average over every particle in the simulation
         for a in range(N):
-
+            
             if v == 'x':
                 input_arr = data[:,Dim*N+a]
             if v == 'vx':
@@ -106,6 +106,13 @@ def make_int_c_sqrd_plot(v):
     print('\a')
     print('\a')
     os.system('open int_c_sqrd_vs_sweep.png')
+
+def working_on_making_int_c_sqrd_treating_in_correct_way():
+    # When v = 'all' it means we are looking at the magnitude of the velocities as seen from
+    # looking at the system as a vector with 2*N*D degrees of freedom. eg. if there are 2 in
+    # a 1D potential particles we will be looking for auto correlations in sqrt(vx_1^2 +vx_2^2)
+    #if v == 'all':
+
 
 def make_acf_tau_plot(f,v):
 
@@ -216,7 +223,7 @@ def main():
     # plot type
     parser.add_argument('-t',action='store',dest = 't',type = str,required = True)
     # which variable are we looking for corrilations is
-    parser.add_argument('-v',action='store',dest = 'v',type = str,required = False,default='vx')
+    parser.add_argument('-v',action='store',dest = 'v',type = str,required = False,default='all')
 
     inargs = parser.parse_args()
     d = inargs.d
@@ -235,7 +242,6 @@ def main():
         make_acf_sweep_plot(v)
     if plot_type == 'int_c_sqrd':
         make_int_c_sqrd_plot(v)
-
 
 
 if __name__ == '__main__':

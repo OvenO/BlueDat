@@ -5,14 +5,13 @@ import argparse
 import o_funcs as of
 import scipy.constants as constants
 
+
 # sliced specific heat. using known zero potential of slices to find full energy variance and
 # using A as tempature in calculation of specific heat. (pg 254 coputational physics book).
 # C = (delta E)^2/kb*T^2
-def ssheat():
+def ssheat(ancl):
 
-    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
-
-    print('sweep must be over A!! sweep_str is: '+sweep_str)
+    print('sweep must be over A!! sweep_str is: '+ancl.sweep_str)
 
     data_file_name = 'ssheat_data.txt'
     if data_file_name in os.listdir('.'):
@@ -51,12 +50,12 @@ def ssheat():
             var_arr = pl.append(var_arr,cur_sweep_var)
 
             # slice the data so we only have data for values of t=pi(2*n + 1/2)
-            cur_data = of.get_zpps(cur_data,Dim,N,dt):
+            cur_data = of.get_zpps(cur_data,ancl.Dim,ancl.N,ancl.dt)
                 
-            if Dim==1:
-                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2
-            if Dim==2:
-                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2+cur_data[int(-how_much*len(cur_data)):,N:2*N]**2
+            if ancl.Dim==1:
+                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:ancl.N]**2
+            if ancl.Dim==2:
+                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:ancl.N]**2+cur_data[int(-how_much*len(cur_data)):,ancl.N:2*ancl.N]**2
             if i==0: print('shape of mag_vel_arr_sqrd'+str(pl.shape(mag_vel_arr_sqrd)))
             
             
@@ -72,7 +71,7 @@ def ssheat():
             cur_en_stuff = to_sum/4
             delta_E_sqrd = pl.append(delta_E_sqrd,cur_en_stuff)
             
-            cur_s_heat = cur_en_stuff/(N*cur_sweep_var**2)
+            cur_s_heat = cur_en_stuff/(ancl.N*cur_sweep_var**2)
             s_heat = pl.append(s_heat,cur_s_heat)
             
             next_line += str(cur_en_stuff)+'   '+str(cur_s_heat)+ '\n'
@@ -84,7 +83,7 @@ def ssheat():
     # form of errorbar(x,y,xerr=xerr_arr,yerr=yerr_arr)
     pl.scatter(var_arr,s_heat,c='k')
     #pl.errorbar(var_arr,averages_2,yerr=std_arr,c='b',ls='none',fmt='o')
-    ax.set_xlabel(sweep_str,fontsize=30)
+    ax.set_xlabel(ancl.sweep_str,fontsize=30)
     ax.set_ylabel('Specific heat per particle',fontsize=20)
     #ax.set_ylim([0.0,0.2])
     fig.tight_layout()
@@ -97,9 +96,7 @@ def ssheat():
 
 # sliced is boolean
 
-def sheat_vs_tempature():
-
-    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
+def sheat_vs_tempature(ancl):
 
     if 'ssheat_data.txt' not in os.listdir('.'):
         print('Need specific heat data')
@@ -142,9 +139,7 @@ def sheat_vs_tempature():
 
 
 
-def temp_granular(sliced):
-
-    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
+def temp_granular(ancl,sliced):
 
     if sliced: 
         data_file_name = 'temp_granular_sliced.txt'
@@ -188,15 +183,15 @@ def temp_granular(sliced):
 
             if sliced:
                 # slice the data so we only have data for values of t=pi(2*n + 1/2)
-                cur_data = of.get_zpps(cur_data,Dim,N,dt)
+                cur_data = of.get_zpps(cur_data,ancl.Dim,ancl.N,ancl.dt)
 
-            if Dim==1:
-                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2
-            if Dim==2:
-                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2+cur_data[int(-how_much*len(cur_data)):,N:2*N]**2
+            if ancl.Dim==1:
+                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:ancl.N]**2
+            if ancl.Dim==2:
+                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:ancl.N]**2+cur_data[int(-how_much*len(cur_data)):,ancl.N:2*ancl.N]**2
             if i==0: print('shape of mag_vel_arr_sqrd'+str(pl.shape(mag_vel_arr_sqrd)))
             
-            cur_temp = mag_vel_arr_sqrd.sum()/N     
+            cur_temp = mag_vel_arr_sqrd.sum()/ancl.N     
             temp_arr = pl.append(temp_arr,cur_temp)
                    
             next_line += str(cur_temp)+ '\n'
@@ -209,7 +204,7 @@ def temp_granular(sliced):
     # form of errorbar(x,y,xerr=xerr_arr,yerr=yerr_arr)
     pl.scatter(var_arr,temp_arr,c='k')
     #pl.errorbar(var_arr,averages_2,yerr=std_arr,c='b',ls='none',fmt='o')
-    ax.set_xlabel(sweep_str,fontsize=30)
+    ax.set_xlabel(ancl.sweep_str,fontsize=30)
     ax.set_ylabel(r'$T_g$',fontsize=30)
     fig.tight_layout()
     fig.savefig(save_str,dpi=300)
@@ -222,15 +217,13 @@ def temp_granular(sliced):
     os.system('say finnished calculating granular tempature')
 
 
-def diffusion_coef(f):
+def diffusion_coef(ancl,f):
 
 #    cur_poin_num = int(f[:f.find('p')])
 #    if (str(cur_poin_num)+'RunImages') not in os.listdir('.'):
 #        os.mkdir(str(cur_poin_num)+'RunImages')
 
-    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
-
-    print('dimension: '+str(Dim))
+    print('dimension: '+str(ancl.Dim))
 
 #    to_save_dir = str(cur_poin_num)+'RunImages/TauACF_Var_'+v
 #    os.mkdir(to_save_dir)
@@ -250,12 +243,12 @@ def diffusion_coef(f):
     # For including the average of all. NOT DONE YET HERE
     diffusion_arr = pl.array([])
     # make em for every particle in the simulation
-    for a in range(N):
+    for a in range(ancl.N):
 
         # can use the dimension to slice everything right
-        cur_x = data[:,Dim*N+a]
-        if Dim ==2:
-            cur_y = data[:,(Dim+1)*N+a]
+        cur_x = data[:,ancl.Dim*ancl.N+a]
+        if ancl.Dim ==2:
+            cur_y = data[:,(ancl.Dim+1)*ancl.N+a]
             distance_arr = pl.sqrt(cur_x**2 + cur_y**2)
         else:
             distance_arr = cur_x
@@ -264,21 +257,21 @@ def diffusion_coef(f):
         
         # This equation generaly holds and for now this is how we are going to calculate the
         # diffusion coefficien:
-        # <x^2>=q*D*t where q is numerical constant that depends on dimesionality. q=2*Dim. D is the
+        # <x^2>=q*D*t where q is numerical constant that depends on dimesionality. q=2*ancl.Dim. D is the
         # diffusion coefficient, and t is the time for which <x^2 is calculated>
         # this and some usefull equations from
         # http://www.life.illinois.edu/crofts/bioph354/diffusion1.html
         # So we can find D
         dist_arr_sqrd = distance_arr**2
         mean_sqrd_dist = dist_arr_sqrd.mean()
-        total_time = len(distance_arr)*dt
-        Diff_coef = mean_sqrd_dist/(2.0*Dim*total_time)
+        total_time = len(distance_arr)*ancl.dt
+        Diff_coef = mean_sqrd_dist/(2.0*ancl.Dim*total_time)
         
         print('Diffusion coefficient for particle ' + str(a) + ' = ' + str(Diff_coef))
 
         # Lets also try to print a tempature from the equation D = kT/f. T -> Absolute tempature.
         # k -> boltzman constat. f -> frictional constant (beta)
-        Temp = Diff_coef * beta 
+        Temp = Diff_coef * ancl.beta 
         
         print('Tempature from Diffusion coef = ' +str(Temp))
         
@@ -305,9 +298,9 @@ def diffusion_coef(f):
 #
 #        var_arr = pl.append(var_arr,cur_sweep_var)
 #
-#        if Dim==1:
+#        if ancl.Dim==1:
 #            mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2
-#        if Dim==2:
+#        if ancl.Dim==2:
 #            mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2+cur_data[int(-how_much*len(cur_data)):,N:2*N]**2
 #        if i==0: print('shape of mag_vel_arr_sqrd'+str(pl.shape(mag_vel_arr_sqrd)))
 #        
@@ -335,7 +328,7 @@ def diffusion_coef(f):
 #    ax = fig.add_subplot(111)
 #    pl.scatter(var_arr,averages/2)
 #    #ax.set_xlim([.5,1.5])
-#    ax.set_xlabel(sweep_str,fontsize=30)
+#    ax.set_xlabel(ancl.sweep_str,fontsize=30)
 #    ax.set_ylabel(r'$\langle v^2 \rangle / 2$',fontsize=30)
 #    fig.tight_layout()
 #    fig.savefig('v_sqrd_avg.png',dpi=300)
@@ -346,19 +339,19 @@ def diffusion_coef(f):
 #    # deided by 4 comes from KE -> (1/2)**2
 #    pl.scatter(var_arr,energy_stuff/4)
 #    #ax.set_xlim([.5,1.5])
-#    ax.set_xlabel(sweep_str,fontsize=30)
+#    ax.set_xlabel(ancl.sweep_str,fontsize=30)
 #    ax.set_ylabel(r'$\frac{\langle KE^2 \rangle - \langle KE \rangle ^ 2}{\langle KE \rangle ^ 2}$',fontsize=30)
 #    fig.tight_layout()
 #    fig.savefig('energy_stuff.png',dpi=300)
 #    pl.close(fig)
 
-def frequency(f):
-    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
+def frequency(ancl,f):
+    print('This function is NNOOOOTTT done yet')
 
 
 # We know that the energy of the system when t=n pi/2  is only KE because the potential U(x,t) is
 # flat at those times. We need to slice at t=pi(2*n + 1/2) in order to actualy et PC sections though. 
-def energy_fluctuation(keyword):
+def energy_fluctuation(ancl,keyword):
 
     avg_save_str = 'avg_energy_stuff'
     en_stuff_save_str = 'energy_stuff_'
@@ -372,45 +365,48 @@ def energy_fluctuation(keyword):
         average_y_lbl = r'$ \langle KE \rangle $'
         en_stuff_y_lbl = r'$\frac{\langle KE^2 \rangle - \langle KE \rangle ^ 2}{\langle KE \rangle ^ 2}$'
 
-    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
 
     if keyword == 'slice': data_file_name = 'sliced_energy_data.txt'
     if keyword == 'ke': data_file_name = 'ke_energy_data.txt'
     if data_file_name in os.listdir('.'):
         data_file = open(data_file_name,'r')
+
         # first line is labels
         labels = data_file.readline()
         plotting_data = pl.genfromtxt(data_file)
+
         #first column sweep variables
         var_arr = plotting_data[:,0]
         # evergy_stuff is next coulumn
         energy_stuff_1 = plotting_data[:,1]
-        energy_stuff_2 = plotting_data[:,2]
+#        energy_stuff_2 = plotting_data[:,2]
         averages_1 = plotting_data[:,3]
-        averages_2 = plotting_data[:,4]
+#        averages_2 = plotting_data[:,4]
         # std_arr is only for averages_2 
         std_arr = plotting_data[:,5]
 
     else:
         data_file = open(data_file_name,'w')
-        data_file.write('sweep_var   energy_stuff_1   energy_stuff_2   averages_1   averages_2 standard_dev\n')
+#        data_file.write('sweep_var   energy_stuff_1   energy_stuff_2   averages_1   averages_2 standard_dev\n')
+        data_file.write('sweep_var   energy_stuff_1   averages_1   standard_dev\n')
 
         # how much of soluton do we want to use? 1 -> all, 0 -> none
         # this can be bigger than in the unsliced ones becasue transients are more or less gone after
         # several PCs anyway.
-        how_much = .8
+        how_much = .2
 
         # See paper j. chem phys., vol 120, No 1, 1 Jan 2004
         # energy_stuff_1 and averages_1 do not asume that the velocites are independently
         # distributed. These use above paper eqn 14
         # energy_sruff_2 and averages_2 assume this is a thermal system and use above paper eqn 15
         energy_stuff_1 = pl.array([])
-        energy_stuff_2 = pl.array([])
+#        energy_stuff_2 = pl.array([])
         var_arr = pl.array([])
         averages_1 = pl.array([])
-        averages_2 = pl.array([])
+#        averages_2 = pl.array([])
         std_arr = pl.array([])
-        for i,j in enumerate(os.listdir('.')):
+        for i,j in enumerate(ancl.list_dir):
+            print('working with file ' + str(j))
             next_line = ''
             if 'poindat.txt' not in j:
                 continue
@@ -424,43 +420,49 @@ def energy_fluctuation(keyword):
 
             if keyword == 'slice':
                 # slice the data so we only have data for values of t=pi(2*n + 1/2)
-                cur_data = of.get_zpps(cur_data,Dim,N,dt)
+                cur_data = of.get_zpps(cur_data,ancl.Dim,ancl.N,ancl.dt)
             
-            if Dim==1:
-                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2
-            if Dim==2:
-                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2+cur_data[int(-how_much*len(cur_data)):,N:2*N]**2
+            if ancl.Dim==1:
+                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:ancl.N]**2
+            if ancl.Dim==2:
+                mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:ancl.N]**2+cur_data[int(-how_much*len(cur_data)):,ancl.N:2*ancl.N]**2
             if i==0: print('shape of mag_vel_arr_sqrd'+str(pl.shape(mag_vel_arr_sqrd)))
             
-            cur_en_stuff_2 = N*((mag_vel_arr_sqrd**2).mean() - (mag_vel_arr_sqrd.mean())**2)/((mag_vel_arr_sqrd.mean())**2)/4
-            energy_stuff_2 = pl.append(energy_stuff_2, cur_en_stuff_2)
+#            cur_en_stuff_2 = N*((mag_vel_arr_sqrd**2).mean() - (mag_vel_arr_sqrd.mean())**2)/((mag_vel_arr_sqrd.mean())**2)/4
+#            energy_stuff_2 = pl.append(energy_stuff_2, cur_en_stuff_2)
 
-            cur_av_2 = pl.sqrt(N*mag_vel_arr_sqrd.mean()**2/4)
-            averages_2 = pl.append(averages_2,cur_av_2)
-            cur_std = pl.sqrt((N*mag_vel_arr_sqrd**2/4).std())
-            std_arr = pl.append(std_arr,cur_std)
+#            cur_av_2 = pl.sqrt(N*mag_vel_arr_sqrd.mean()**2/4)
+#            averages_2 = pl.append(averages_2,cur_av_2)
+            print('mag_vel_arr_sqrd: ' +str(mag_vel_arr_sqrd))
+#            cur_std = (mag_vel_arr_sqrd/2.0).std()
+#            std_arr = pl.append(std_arr,cur_std)
             
             to_sum = 0.0
             to_sum_avg_en = 0.0
             for a in range(len(mag_vel_arr_sqrd[0,:])):
                 for b in range(len(mag_vel_arr_sqrd[0,:])):
                     first = (mag_vel_arr_sqrd[:,a]*mag_vel_arr_sqrd[:,b]).mean()
+                    print('first: ' + str(first))
                     second = (mag_vel_arr_sqrd[:,a].mean())*(mag_vel_arr_sqrd[:,b].mean())
+                    print('second: ' + str(second))
                     
                     to_sum += first - second
+                    print('in loop to_sum: ' +str(to_sum))
                     to_sum_avg_en += second
+                    print('in loop to_sum_avg_en: ' +str(to_sum_avg_en))
             
-            #print('to_sum: ' +str(to_sum))
-            #print('to_sum_avg_en: ' +str(to_sum_avg_en))
+            print('after loop to_sum: ' +str(to_sum))
+            print('after loop to_sum_avg_en: ' +str(to_sum_avg_en))
             cur_en_stuff_1 = to_sum/to_sum_avg_en/4
             energy_stuff_1 = pl.append(energy_stuff_1,cur_en_stuff_1)
 
             
-            cur_av_1 = pl.sqrt(to_sum_avg_en/4/N)
+            cur_av_1 = pl.sqrt(to_sum_avg_en/4/ancl.N)
             averages_1 = pl.append(averages_1,cur_av_1)
 
-            next_line += str(cur_en_stuff_1)+'   '+str(cur_en_stuff_2)+'   '+str(cur_av_1)+ \
-                    '   '+str(cur_av_2)+'   '+str(cur_std)+'\n'
+#            next_line += str(cur_en_stuff_1)+'   '+str(cur_en_stuff_2)+'   '+str(cur_av_1)+ \
+#                    '   '+str(cur_av_2)+'   '+str(cur_std)+'\n'
+            next_line += str(cur_en_stuff_1)+'   '+str(cur_av_1)+'\n'
             data_file.write(next_line)
         
     fig = pl.figure()
@@ -468,7 +470,7 @@ def energy_fluctuation(keyword):
     # form of errorbar(x,y,xerr=xerr_arr,yerr=yerr_arr)
     pl.scatter(var_arr,averages_1,c='k')
     #pl.errorbar(var_arr,averages_2,yerr=std_arr,c='b',ls='none',fmt='o')
-    ax.set_xlabel(sweep_str,fontsize=30)
+    ax.set_xlabel(ancl.sweep_str,fontsize=30)
     ax.set_ylabel(average_y_lbl,fontsize=30)
     fig.tight_layout()
     fig.savefig(avg_save_str+'.png',dpi=300)
@@ -476,41 +478,38 @@ def energy_fluctuation(keyword):
 
     fig = pl.figure()
     ax = fig.add_subplot(111)
-    # deided by 4 comes from KE -> (1/2)**2
     pl.scatter(var_arr,energy_stuff_1,c='r')
     #pl.scatter(var_arr,energy_stuff_2,c='b')
     #ax.set_xlim([0.0,1.6])
     #ax.set_ylim([0.0,.04])
-    #ax.set_xlim([.5,1.5])
-    #ax.set_ylim([0,.03])
-    ax.set_xlabel(sweep_str,fontsize=30)
+    #ax.set_xlim([.5,1.0])
+    #ax.set_ylim([0,.24])
+    ax.set_xlabel(ancl.sweep_str,fontsize=30)
     ax.set_ylabel(en_stuff_y_lbl,fontsize=30)
     fig.tight_layout()
     fig.savefig(en_stuff_save_str+'1.png',dpi=300)
     pl.close(fig)
     
-    fig = pl.figure()
-    ax = fig.add_subplot(111)
-    # deided by 4 comes from KE -> (1/2)**2
-    pl.scatter(var_arr,energy_stuff_2,c='b')
-    ax.set_xlabel(sweep_str,fontsize=30)
-    ax.set_ylabel(en_stuff_y_lbl,fontsize=30)
-    #ax.set_xlim([.5,1.5])
-    #ax.set_ylim([0,.03])
-    fig.tight_layout()
-    fig.savefig(en_stuff_save_str+'2.png',dpi=300)
-    pl.close(fig)
+#    fig = pl.figure()
+#    ax = fig.add_subplot(111)
+#    pl.scatter(var_arr,energy_stuff_2,c='b')
+#    ax.set_xlabel(ancl.sweep_str,fontsize=30)
+#    ax.set_ylabel(en_stuff_y_lbl,fontsize=30)
+#    #ax.set_xlim([.5,1.5])
+#    #ax.set_ylim([0,.03])
+#    fig.tight_layout()
+#    fig.savefig(en_stuff_save_str+'2.png',dpi=300)
+#    pl.close(fig)
 
     print('\a')
     
-def spatio_temporal():
+def spatio_temporal(ancl):
 
     os.mkdir('SpatioTemporalVels')
 
     print('RIGHT NOW THIS IS ONLY FOR VX!!!!!!!')
-    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim  = of.get_system_info()
 
-    p_arr = pl.arange(0,N)
+    p_arr = pl.arange(0,ancl.N)
     
 
     # How many cycles do we want to look at?
@@ -530,13 +529,13 @@ def spatio_temporal():
         var_arr = pl.append(var_arr,cur_sweep_var)
         
         count = 0
-        grid = cur_data[-int(how_many*2.0*pl.pi/dt):,:N]
+        grid = cur_data[-int(how_many*2.0*pl.pi/ancl.dt):,:ancl.N]
 
         # in 1D because particles never cross eachother we can order them in the images to mathch
         # their physical order.
         grid_ordered = pl.zeros(pl.shape(grid))
         # can just use the initial conditions to figure out where each is
-        init_x = cur_data[0,N:2*N]
+        init_x = cur_data[0,ancl.N:2*ancl.N]
         sorted_x = sorted(init_x)
         for a,alpha in enumerate(sorted_x):
             for b,beta in enumerate(init_x):
@@ -567,11 +566,11 @@ def spatio_temporal():
 #            if check_time < dt and check_time > 0.0:
 #                new_data = pl.append(new_data,cur_data[i,:])
 #
-#        cur_data = new_data.reshape(-1,Dim*2*N)
+#        cur_data = new_data.reshape(-1,ancl.Dim*2*N)
 #
-#        if Dim==1:
+#        if ancl.Dim==1:
 #            mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2
-#        if Dim==2:
+#        if ancl.Dim==2:
 #            mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:N]**2+cur_data[int(-how_much*len(cur_data)):,N:2*N]**2
 #        if i==0: print('shape of mag_vel_arr_sqrd'+str(pl.shape(mag_vel_arr_sqrd)))
 #        
@@ -611,7 +610,7 @@ def spatio_temporal():
 #    # form of errorbar(x,y,xerr=xerr_arr,yerr=yerr_arr)
 #    pl.scatter(var_arr,averages_1,c='r')
 #    pl.errorbar(var_arr,averages_2,yerr=std_arr,c='b',ls='none',fmt='o')
-#    ax.set_xlabel(sweep_str,fontsize=30)
+#    ax.set_xlabel(ancl.sweep_str,fontsize=30)
 #    ax.set_ylabel(r'$ \langle E \rangle $',fontsize=30)
 #    fig.tight_layout()
 #    fig.savefig('sliced_E_avg.png',dpi=300)
@@ -625,7 +624,7 @@ def spatio_temporal():
 #    #ax.set_xlim([0.0,1.6])
 #    #ax.set_ylim([0.0,.04])
 #    #ax.set_xlim([.5,1.5])
-#    ax.set_xlabel(sweep_str,fontsize=30)
+#    ax.set_xlabel(ancl.sweep_str,fontsize=30)
 #    ax.set_ylabel(r'$\frac{\langle E^2 \rangle - \langle E \rangle ^ 2}{\langle E \rangle ^ 2}$',fontsize=30)
 #    fig.tight_layout()
 #    fig.savefig('sliced_energy_stuff_1.png',dpi=300)
@@ -635,7 +634,7 @@ def spatio_temporal():
 #    ax = fig.add_subplot(111)
 #    # deided by 4 comes from KE -> (1/2)**2
 #    pl.scatter(var_arr,energy_stuff_2,c='b')
-#    ax.set_xlabel(sweep_str,fontsize=30)
+#    ax.set_xlabel(ancl.sweep_str,fontsize=30)
 #    ax.set_ylabel(r'$\frac{\langle E^2 \rangle - \langle E \rangle ^ 2}{\langle E \rangle ^ 2}$',fontsize=30)
 #    fig.tight_layout()
 #    fig.savefig('sliced_energy_stuff_2.png',dpi=300)
@@ -652,8 +651,15 @@ def main():
     parser.add_argument('-f',action='store',dest = 'f',type = str, required = False)
     # plot type
     parser.add_argument('-t',action='store',dest = 't',type = str,required = True)
+    # This is going to be a unique option to collect AAAALLLLLL the data of several individual
+    # bifurcation runs (everything the same except random initial conditions) into one so that the
+    # diagram does not look so messy. The argument being passed is a directory --> no default
+    # option.
+    parser.add_argument('--together',action='store',dest='together',type = bool, required = False, default=False)
+
 
     inargs = parser.parse_args()
+    together = inargs.together
     d = inargs.d
     f = inargs.f
     plot_type = inargs.t
@@ -664,36 +670,47 @@ def main():
     # This is also a single particle operation. Lets make a directory and have an individual image
     # for each run.
 
+    # ancl --> anal class
+    ancl = of.anal_run()
+    ancl.together = together
+    ancl.get_info()
+    ancl.set_list_dir()
+
+    # note: if ancl.Dim = 1 y_num_cell -> ' No y ' and order -> 'polygamma'
+    print('ancl.Dim is: ' +str(ancl.Dim))
+    print('ancl.x_num_cell: ' + str(ancl.x_num_cell))
+
+
     if plot_type == 'diffusion':
         print('calling diffusion_coef(f)')
-        diffusion_coef(f)
+        diffusion_coef(ancl,f)
     if plot_type == 'ke':
         print('calling energy_fluctuation(ke)')
-        energy_fluctuation('ke')
+        energy_fluctuation(ancl,'ke')
     if plot_type == 'frequency':
         print('calling frequency')
-        frequency(f)
+        frequency(ancl,f)
     # We know that the energy of the system when t=n pi/2  is only KE because the potential U(x,t) is
     # flat at those times. We are going to aslo plot these results as a way fo observing total
     # energy
     if plot_type == 'sliced_E':
         print('calling energy_fluctuation(slice)')
-        energy_fluctuation('slice')
+        energy_fluctuation(ancl,'slice')
     if plot_type =='st':
         print('calling spatio_temporal')
-        spatio_temporal()
+        spatio_temporal(ancl)
     # sliced specific heat. using known zero potential of slices to find full energy variance and
     # using A as tempature in calculation of specific heat. (pg 254 coputational physics book).
     # C = (delta E)^2/kb*T^2
     if plot_type == 'ssheat':
         print('calling ssheat()')
-        ssheat()
+        ssheat(ancl)
     if plot_type == 'temp_sliced':
-        temp_granular(True)
+        temp_granular(ancl,True)
     if plot_type == 'temp_not_sliced':
-        temp_granular(False)
+        temp_granular(ancl,False)
     if plot_type == 'sheat_v_temp':
-        sheat_vs_tempature()
+        sheat_vs_tempature(ancl)
 
 if __name__ == '__main__':
     main()

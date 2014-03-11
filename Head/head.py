@@ -7,6 +7,112 @@ import paramiko
 import random
 import shutil
 
+class SecSin1D(object):
+    # N -> number of particles
+    # number_of -> number of blocks (usualy 500). i.e. how many steps
+    # start -> parameter starting poin. 
+    # stop -> parameter stoping point (step size will be calculated). 
+    # cycles-> runtime cycles. 
+    # num_cell -> number of unit cells to make simulation length over
+    # qq -> intercharge force
+    # d -> length of system as determined by the num_cell
+    # A -> this is the interaction amplitude with the EC fild. It is an array so
+    # that each particle may have its own interaction with the field
+    def __init__(self):
+        self.block_dir = ''
+        self.var = 'A'
+        self.script_dir= '/users/o/m/omyers/datasphere/ECproject/SecSin1D/'
+        self.number_of = 300
+        self.start     = .3
+        self.stop      = 1.4
+        self.dt        = 0.05
+        self.cycles    = 150
+        self.N = 2
+        self.qq = .01
+        self.beta = .6
+        self.num_cell = 1.0
+        self.d = self.num_cell * 2.0 * pl.pi
+        self.A = pl.zeros(2*self.N) +.5
+
+        # Full trajectory or just Poincare sections
+        self.sliced = False
+        #self.sliced = True
+
+    def init_block(self):
+
+        # find the amount we want to increase the parameter by
+        inc_param = (self.stop-self.start)/self.number_of
+    
+        cur_var = self.start
+    
+        get_make_dir(self)
+        
+        # make info file
+        info_file = open(self.block_dir + '/info.txt','w')
+        info_file.write('dir: '+str(self.block_dir)+'\nsurf: 1.0') 
+        info_file.write('\ndt: '+str(self.dt))
+        if self.var == 'beta':
+            info_file.write('\nbeta (damping): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nbeta (damping): '+str(self.beta))
+        if self.var == 'cycles': 
+            info_file.write('\ncycles (run time): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            info_file.write('\ncycles (run time): '+str(self.cycles))
+        if self.var == 'N': 
+            info_file.write('\nN (particle number): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            info_file.write('\nN (particle number): '+str(self.N))
+        if self.var == 'qq': 
+            info_file.write('\nqq (particle interaction strength): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nqq (particle interaction strength): '+str(self.qq))
+        if self.var == 'num_cell':
+            info_file.write('\nnum_cell (system length): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nnum_cell (system length): '+str(self.num_cell))
+        if self.var == 'A': 
+            info_file.write('\nA (interaction amplitude): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            if type(A)==float: 
+                info_file.write('\nA (interaction amplitude): '+str(self.A))
+            else: 
+                info_file.write('\nA (interaction amplitude): '+str(min(self.A))+'-'+str(max(self.A)))
+        info_file.close()
+
+        for l in range(self.number_of):
+            self.x0 = pl.zeros([2*self.N])
+            
+            for i,j in enumerate(self.x0):
+                if i in range(self.N,2*self.N):
+                    print(i)
+                    self.x0[i] = random.random()*self.d
+                    continue
+
+            #make the file
+            cur_poin_file = open(self.block_dir+'/'+str(l)+'poindat.txt','w')
+    
+            #write the first few lines of the file
+            cur_poin_file.write(str(self.var)+' --> ' +str(cur_var)+'\n')
+            
+            # this just prints the numbers with one space imbetween. the .replace gets rid of the \n
+            # but i'm still not really sure why they are there in the first place.
+            cur_poin_file.write(str(self.x0)[1:-1].replace('\n',''))
+            cur_poin_file.write('\n')
+            
+            cur_poin_file.close()
+            cur_var += inc_param
+
+        # now that all the file are made make an "Orig" directory in the block directory to store
+        # the origonal blocks of initial conditions. This way if something goes wrong we can pull
+        # them out and run again.py again by hand
+        os.mkdir(self.block_dir + '/Orig')
+        os.system('cp ' + self.block_dir +'/*.txt ' + self.block_dir + '/Orig/')
+        os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/2DBlock/Old/')
+        print 'self.block_dir'
+        print self.block_dir
+
+
 class Sin2D(object):
     # N -> number of particles
     # number_of -> number of blocks (usualy 500). i.e. how many steps
@@ -391,12 +497,12 @@ class Sin1D(object):
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
         self.number_of = 300
-        self.start     = 2.0
-        self.stop      = 3.75
+        self.start     = .3
+        self.stop      = 1.4
         self.dt        = 0.05
         self.cycles    = 150
-        self.N = 7
-        self.qq = 1.0
+        self.N = 1
+        self.qq = .01
         self.beta = .6
         self.num_cell = 1.0
         self.d = self.num_cell * 2.0 * pl.pi

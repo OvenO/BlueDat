@@ -213,14 +213,14 @@ def old_renormalize(x_unpurt,x_purt,total_epsilon,N):
 # be the propper way... The proper way being the vector with 2*N*D degrees of freedom. 
     # Want to put the new purtubed (return) point at a distace epsilon from the fudicial trajectory
     # along the axsis of greatest expansion. 
-def renormalize(x_unpurt,x_before,x_purt,total_epsilon,N):
+def renormalize(x_unpurt,x_before,x_purt,epsilon,N):
     # BEFORE ANYTHING: make sure particles near boundaries are shuffeled into places where where the
     # seam is not between any purturbed and fudicial trajectories.
-    x_unpurt,x_purt = shuff(x_unpert,x_purt)
+    x_unpurt,x_purt = shuff(x_unpurt,x_purt,N)
 
     # The trajectory we are going to be returning is going to be the new one for the next run. lets
     # call it
-    x_new = pl.copy(x_unpert)
+    x_new = pl.copy(x_unpurt)
     # copied it because we are going to add the small amounts to it to purturb it.
 
     # lets find a vector pointing in the direction of the trajectories path. For this we need the
@@ -239,11 +239,11 @@ def renormalize(x_unpurt,x_before,x_purt,total_epsilon,N):
     # normalize it
     diff_vec = diff_vec/pl.sqrt(pl.dot(diff_vec,diff_vec))
     print('diff_vec magnitude (should be 1): ' + str(pl.sqrt(pl.dot(diff_vec,diff_vec))))
-    print('normalized(x_unpert-x_purt)dot(traj_vec)  (should get close to 0): '+ str(pl.dot(diff_vec,traj_vec)))
+    print('normalized(x_unpurt-x_purt)dot(traj_vec)  (should get close to 0): '+ str(pl.dot(diff_vec,traj_vec)))
 
     # for now lets just return a point moved back along the difference vector. no gram shmidt or
     # anything.
-    return n_new + epsilon*diff_vec
+    return x_new + epsilon*diff_vec
 
     
 
@@ -291,7 +291,7 @@ def main():
     # n is for the particle of interest
     #parser.add_argument('-n',action='store',dest = 'n',type = int, required = True)
     # eplsilon should be passable. THis is total epsilon
-    parser.add_argument('-e',action='store',dest = 'e',type = float, required = False,default = 1e-8)
+    parser.add_argument('-e',action='store',dest = 'e',type = float, required = False,default = 1e-4)
 
 
     inargs = parser.parse_args()
@@ -334,7 +334,7 @@ def main():
         check_time = (i*dt+pl.pi/2.0)%(pl.pi*2.0)
         if check_time < dt and check_time > 0.0:
             new_data = pl.append(new_data,data[i,:])
-            new_before = pl.array(new_before,data[i-1,:])
+            new_before = pl.append(new_before,data[i-1,:])
             if checked:
                 first_i = i
                 checked=False
@@ -343,7 +343,7 @@ def main():
     sliced_data = new_data.reshape(-1,2*N)
     sliced_before = new_before.reshape(-1,2*N)
 
-    print('shape of sliced fiducial data before doing anything: ' +str(pl.shape(data)))
+    print('shape of sliced fiducial data before doing anything: ' +str(pl.shape(sliced_data)))
 
     sliced_data[:,N:] = sliced_data[:,N:]%(2.0*pl.pi)
 
@@ -383,7 +383,7 @@ def main():
     fiducial_start = sliced_data[0,:]
     print('First fiducial: '+str(fiducial_start))
     # 4) purturb all particles by epsilon
-    init = get_first_init(fiducial_start,epsilon,i,N)
+    init = get_first_init(fiducial_start,epsilon,N)
 
     print('first purturbed initial conditions: '+str(init))
     # 5) Run puturbed version of system for a period
@@ -437,7 +437,7 @@ def main():
 
 
         # get the distance between the fudicial and the purturbed trajectory
-        final_dist = full_distace(fiducial_end,purt_end,N):
+        final_dist = full_distace(fiducial_end,purt_end,N)
         print('final distance: ' +str(final_dist))
         final_dist_arr = pl.append(final_dist_arr,final_dist)
 
