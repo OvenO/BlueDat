@@ -30,7 +30,7 @@ class SecSin1D(object):
         self.N = 2
         self.qq = .01
         self.beta = .6
-        self.num_cell = 1.0
+        self.num_cell = 2.0
         self.d = self.num_cell * 2.0 * pl.pi
         self.A = pl.zeros(2*self.N) +.5
 
@@ -497,11 +497,11 @@ class Sin1D(object):
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
         self.number_of = 300
-        self.start     = .3
+        self.start     = 0.0
         self.stop      = 1.4
         self.dt        = 0.05
         self.cycles    = 150
-        self.N = 1
+        self.N = 2
         self.qq = .01
         self.beta = .6
         self.num_cell = 1.0
@@ -982,6 +982,8 @@ def main():
 
     if key_word == 'Sin1D':
         to_run_object = Sin1D()
+    if key_word == 'SecSin1D':
+        to_run_object = SecSin1D()
     if key_word == 'Sin2D':
         to_run_object = Sin2D()
     if key_word == 'Ensbl_Sin1D':
