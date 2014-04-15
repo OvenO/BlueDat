@@ -118,6 +118,23 @@ def get_zpps(sol,Dim,N,dt):
 
 #***********************************************************************************************
 #***********************************************************************************************
+# This returns sliced data that is sliced at the t=0 (Max potential) poincare section (mpps)
+def get_mpps(sol,Dim,N,dt):
+    # slice the data so we only have data for values of t=pi*2*n)
+    new_data = sp.array([])
+    for i in range(len(sol)):
+        # This is getting values of time that are at maximum potentials!!! WRONG
+        # check_time = i*dt%(pl.pi*2.0)
+        check_time = (i*dt)%(sp.pi*2.0)
+        if check_time < dt and check_time > 0.0:
+            new_data = sp.append(new_data,sol[i,:])
+    
+    return new_data.reshape(-1,Dim*2*N)
+
+
+#***********************************************************************************************
+#***********************************************************************************************
+
 # This function taks a multiparticle solution as an input. It returns a solution of the same form
 # but where the trajectory with the smallest average squared velocity is at the centre of the plot.
 # We are only going to be looking at the last quarter of the trajectory. There is no reason to look
@@ -234,7 +251,7 @@ def get_system_info():
     info_f = open('info.txt','r')
     l = info_f.readlines()
 
-    looking_for=['qq','dt','beta','A','cycles','particle number','x_num_cell','y_num_cell','order']
+    looking_for=['qq','dt','beta','A ','cycles','particle number','x_num_cell','y_num_cell','order']
     values =    [ 0.0, 0.0, 0.0  ,0.0, 0.0    , 0.0             , 0.0        , 0.0        , 0.0   ]
     # make sure to type cast all of these right later (above)
 
@@ -247,7 +264,8 @@ def get_system_info():
                 else:
                     # in the case where values[a] is a string -> keep string because its a note
                     if type(values[a]) == str: continue
-                    else: values[a] = float(j.split()[-1])
+                    else: 
+                        values[a] = float(j.split()[-1])
 
     qq         = values[0]
     dt         = values[1]

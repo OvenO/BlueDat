@@ -246,8 +246,8 @@ class One_Particle_Ensbl_Sin_1D(object):
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/One_Particle_Sin_1D/'
         self.number_of = 300
-        self.start     = .7
-        self.stop      = 1.40
+        self.start     = .2
+        self.stop      = .90
         self.dt        = 0.05
         self.cycles    = 50
         self.beta = .6
@@ -261,8 +261,8 @@ class One_Particle_Ensbl_Sin_1D(object):
         self.vy_corner = 0.0
         self.y_corner  = 0.0
 
-        self.x_num     = 60
-        self.vx_num    = 30
+        self.x_num     = 8
+        self.vx_num    = 5
         # Full trajectory or just Poincare sections
         self.sliced = False
         #self.sliced = True
@@ -497,12 +497,15 @@ class Sin1D(object):
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/Sin1D/'
         self.number_of = 300
+        #self.start     = 1.1 # for N=5 numcell =2
+        #self.stop      = 1.7 # for N=5 numcell =2
         self.start     = 0.0
-        self.stop      = 1.4
+        self.stop      = 1.0
+        #self.stop      = 1.25 # for N=3 numcell=2
         self.dt        = 0.05
-        self.cycles    = 150
-        self.N = 2
-        self.qq = .01
+        self.cycles    = 850
+        self.N = 8
+        self.qq = 1.0
         self.beta = .6
         self.num_cell = 1.0
         self.d = self.num_cell * 2.0 * pl.pi

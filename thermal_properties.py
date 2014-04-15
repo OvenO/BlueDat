@@ -5,6 +5,97 @@ import argparse
 import o_funcs as of
 import scipy.constants as constants
 
+# cross corelation between adjacent particles.
+# See paper "Spatiotemporal oscillation patterns in the collective relaxation dynamics of
+# interacting particles in periodic potentials
+def adj_cross_cor(ancl):
+    
+    # how much are we averaging over 
+    how_much = int(40.0*pl.pi/ancl.dt)
+
+    # array to store all the values found for each value of A so we can plot them
+    k_arr = pl.array([])
+    # array to store sweeping variables in
+    var_arr = pl.array([])
+
+    for i,j in enumerate(ancl.list_dir):
+        if 'poindat.txt' not in j: continue
+
+        print('working with file ' + str(j))
+   
+        f = open(j,'r')
+        # Store the parameter value from the first line
+        cur_sweep_var = float(f.readline().split()[-1])
+        var_arr = pl.append(var_arr,cur_sweep_var)
+
+        # data
+        data = pl.genfromtxt(f)
+        f.close()
+
+        # velocities will be the first N columns 
+
+        # We need to sort out which particle is which column. Positions will be the next N columns.
+        # Give this job to a seperate function. F
+
+        # Last positions will do fine
+        pos = pl.copy(data[-1,ancl.N:])
+
+        # define array to keep indexes in 
+        i_arr = pl.array([])
+
+        # Now comes figuring out the indexing
+        for i in range(ancl.N):
+            i_arr = pl.append(i_arr,pos.argmin())
+            # set the min to be more than the max so that the next min can befound but the array retain
+            # its shape
+            pos[pos.argmin()]=pos.max()+1
+
+
+        print('i_arr = ' + str(i_arr))
+
+        # measure the phase corelation betwee adjacent particles.
+        # See paper "Spatiotemporal oscillation patterns in the collective relaxation dynamics of
+        # interacting particles in periodic potentials
+
+        k = 0.0
+        for i,j in enumerate(i_arr):
+            v_i = pl.copy(data[-how_much:,j])
+            #v_(i+1)
+            if (i+1) == len(i_arr): 
+                v_ip1 = data[-how_much:,i_arr[0]]
+            else:
+                v_ip1 = data[-how_much:,i_arr[i+1]]
+
+
+            # These lines are just for debugging 
+            numerator = (v_i*v_ip1).mean()*2.0
+            print('numerator = ' +str(numerator))
+            denom = ((v_i*v_i).mean() + (v_ip1*v_ip1).mean())
+            print('denom = ' + str(denom))
+            k_i = numerator/denom
+
+            #k_i = (v_i*v_ip1).mean()*2.0/((v_i*v_i).mean() + (v_ip1*v_ip1).mean())
+
+            k += k_i
+
+        k = k/ancl.N
+        k_arr = pl.append(k_arr,k)
+
+
+    fig = pl.figure()
+    ax = fig.add_subplot(111)
+    # form of errorbar(x,y,xerr=xerr_arr,yerr=yerr_arr)
+    pl.scatter(var_arr,k_arr,c='k')
+    #pl.errorbar(var_arr,averages_2,yerr=std_arr,c='b',ls='none',fmt='o')
+    ax.set_xlabel(ancl.sweep_str,fontsize=30)
+    ax.set_ylabel(r'$K_v$',fontsize=30)
+    fig.tight_layout()
+    fig.savefig('adj_cross_cor.png',dpi=300)
+    pl.close(fig)
+
+
+#******************************************************************************************************************************
+#******************************************************************************************************************************
 
 # sliced specific heat. using known zero potential of slices to find full energy variance and
 # using A as tempature in calculation of specific heat. (pg 254 coputational physics book).
@@ -380,10 +471,10 @@ def energy_fluctuation(ancl,keyword):
         # evergy_stuff is next coulumn
         energy_stuff_1 = plotting_data[:,1]
 #        energy_stuff_2 = plotting_data[:,2]
-        averages_1 = plotting_data[:,3]
+        averages_1 = plotting_data[:,2]
 #        averages_2 = plotting_data[:,4]
         # std_arr is only for averages_2 
-        std_arr = plotting_data[:,5]
+        #std_arr = plotting_data[:,5]
 
     else:
         data_file = open(data_file_name,'w')
@@ -421,6 +512,8 @@ def energy_fluctuation(ancl,keyword):
             if keyword == 'slice':
                 # slice the data so we only have data for values of t=pi(2*n + 1/2)
                 cur_data = of.get_zpps(cur_data,ancl.Dim,ancl.N,ancl.dt)
+                # For slices at t=0 use below
+                #cur_data = of.get_mpps(cur_data,ancl.Dim,ancl.N,ancl.dt)
             
             if ancl.Dim==1:
                 mag_vel_arr_sqrd = cur_data[int(-how_much*len(cur_data)):,:ancl.N]**2
@@ -478,10 +571,12 @@ def energy_fluctuation(ancl,keyword):
 
     fig = pl.figure()
     ax = fig.add_subplot(111)
-    pl.scatter(var_arr,energy_stuff_1,c='r')
+    pl.scatter(var_arr,energy_stuff_1,c='k')
     #pl.scatter(var_arr,energy_stuff_2,c='b')
     #ax.set_xlim([0.0,1.6])
-    #ax.set_ylim([0.0,.04])
+    if ancl.y_upper_lim != None: ax.set_ylim([0.0,ancl.y_upper_lim])
+    if (ancl.x_upper_lim != None) & (ancl.x_lower_lim != None):
+        ax.set_xlim([ancl.x_lower_lim,ancl.x_upper_lim])
     #ax.set_xlim([.5,1.0])
     #ax.set_ylim([0,.24])
     ax.set_xlabel(ancl.sweep_str,fontsize=30)
@@ -656,13 +751,21 @@ def main():
     # diagram does not look so messy. The argument being passed is a directory --> no default
     # option.
     parser.add_argument('--together',action='store',dest='together',type = bool, required = False, default=False)
-
+    # So we can set the y upper lim without going into the program
+    parser.add_argument('--yu',action='store',dest='yu',type = float, required = False, default=None)
+    # So we can set the x lower lim without going into the program
+    parser.add_argument('--xl',action='store',dest='xl',type = float, required = False, default=None)
+    # So we can set the x upper lim without going into the program
+    parser.add_argument('--xu',action='store',dest='xu',type = float, required = False, default=None)
 
     inargs = parser.parse_args()
     together = inargs.together
     d = inargs.d
     f = inargs.f
     plot_type = inargs.t
+    y_upper_lim = inargs.yu
+    x_lower_lim = inargs.xl
+    x_upper_lim = inargs.xu
 
 
     os.chdir(d)
@@ -675,6 +778,10 @@ def main():
     ancl.together = together
     ancl.get_info()
     ancl.set_list_dir()
+
+    ancl.y_upper_lim = y_upper_lim
+    ancl.x_lower_lim = x_lower_lim
+    ancl.x_upper_lim = x_upper_lim
 
     # note: if ancl.Dim = 1 y_num_cell -> ' No y ' and order -> 'polygamma'
     print('ancl.Dim is: ' +str(ancl.Dim))
@@ -711,6 +818,8 @@ def main():
         temp_granular(ancl,False)
     if plot_type == 'sheat_v_temp':
         sheat_vs_tempature(ancl)
+    if plot_type == 'adj_cross':
+        adj_cross_cor(ancl)
 
 if __name__ == '__main__':
     main()

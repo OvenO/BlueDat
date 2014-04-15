@@ -22,16 +22,20 @@ def set_projection(projection,x_num_cell,y_num_cell,Dim):
     # projection will not be anything pathological (i.e only velocity as verticasl
     # axis in x,y phase projections
     if projection == 'xy':
-        if Dim == 1: 
-            print('No y in 1D')
-            quit()
-        ax_num = pl.array([2,3,3,4])
         # make strings for plots acordingly
         x_lbl = r'$x$'
         y_lbl = r'$y$'
-        # set axis limits (ranges) acordingly
-        x_rng = [0.0,2.0*pl.pi*x_num_cell]
-        y_rng = [0.0,2.0*pl.pi*y_num_cell]
+        if Dim == 1: 
+            print('No y in 1D: continuing anyway in realspace')
+            # the -1s are for determinig that its a 1D realspace plot
+            ax_num = pl.array([1,2,-1,-1])
+            x_rng = [0.0,2.0*pl.pi*x_num_cell]
+            y_rng = [-1,1]
+        else:
+            ax_num = pl.array([2,3,3,4])
+            # set axis limits (ranges) acordingly
+            x_rng = [0.0,2.0*pl.pi*x_num_cell]
+            y_rng = [0.0,2.0*pl.pi*y_num_cell]
         
     if projection == 'xvx':
         if Dim == 2:
@@ -164,8 +168,8 @@ def main():
         if make_fvm:
             os.mkdir('LastVelMovie')
             # lets see what the velocity disrobution is when the potential is zero
-            # go_back =int(pl.pi/2.0/dt)
-            go_back = -1
+            go_back =int(6.0*pl.pi/dt)
+            #go_back = -1
         if make_averages:
             avges_fig = pl.figure()
             avges_ax = avges_fig.add_subplot(111)
@@ -216,7 +220,7 @@ def main():
                     lm_ax.set_title(sweep_str + '='+str(var))
                     lm_ax.set_xlabel(x_lbl,fontsize=30)
                     lm_ax.set_ylabel(y_lbl,fontsize=30)
-                    lm_ax.set_xlim([0.0,2.0*pl.pi])
+                    lm_ax.set_xlim([0.0,2.0*pl.pi*x_num_cell])
                     # how much of the last part of the solution do you want to plot
                     amount = len(sol)-int(len(sol)/5.0)
                     lm_ax.scatter(sol[amount:,(ax_num[0])*N:(ax_num[1])*N],sol[amount:,(ax_num[2])*N:(ax_num[3])*N],c='k',s=1)
@@ -229,7 +233,7 @@ def main():
 
                     fv_fig = pl.figure()
                     fv_ax = fv_fig.add_subplot(111)
-                    fv_ax.hist(sol[-go_back,:N],bins=want_bins)
+                    fv_ax.hist(pl.append(sol[-go_back:,:N],0),bins=want_bins)
                     fv_ax.set_xlabel(r'$v$'      ,fontsize=30)
                     #fv_ax.set_ylabel(r'$$',fontsize=30)
                     #fv_ax.scatter(sol[i,N:2*N]%d,sol[i,:N],c='b')
@@ -289,8 +293,9 @@ def main():
                     count_pc+=1
             print("number of Poincare sections in plot: " + str(count_pc))
             tz_fig.tight_layout()
-            tz_fig.savefig(f_num_str+'RunImages/'+f_num_str+'tzpc.png')
-            pl.close(tz_fig)
+            pl.show()
+            #tz_fig.savefig(f_num_str+'RunImages/'+f_num_str+'tzpc.png')
+            #pl.close(tz_fig)
 
         # THIS IS NOT QUITE GENERALY REDY
         if make_vzpc:
@@ -339,7 +344,11 @@ def main():
                     r_ax.set_xlabel(x_lbl,fontsize=30)
                     r_ax.set_ylabel(x_lbl,fontsize=30)
                     #r_ax.set_xlim([450,550])
-                    r_ax.scatter(sol[i,ax_num[0]*N:ax_num[1]*N],sol[i,ax_num[2]*N:ax_num[3]*N],c='b',s=1)
+                    # Find out if we are ploting 1D realspace (look for -1s)
+                    if ax_num[2]== -1:
+                        r_ax.scatter(sol[i,ax_num[0]*N:ax_num[1]*N],pl.zeros(N),c='b',s=1)
+                    else:
+                        r_ax.scatter(sol[i,ax_num[0]*N:ax_num[1]*N],sol[i,ax_num[2]*N:ax_num[3]*N],c='b',s=1)
                     r_fig.tight_layout()
                     r_fig.savefig(f_num_str+'RunImages/Space_'+projection+'/%(number)04d.png'%{'number':i})
                     pl.close(r_fig)
