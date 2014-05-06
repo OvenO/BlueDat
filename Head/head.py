@@ -7,6 +7,109 @@ import paramiko
 import random
 import shutil
 
+class OurHMF(object):
+    # N -> number of particles
+    # start -> parameter starting poin. 
+    # stop -> parameter stoping point (step size will be calculated). 
+    # cycles-> runtime cycles. 
+    # O_mega -> intercharge force
+    # A -> this is the interaction amplitude with the fild. 
+    # B -> particler particle interaction stregth
+
+    def __init__(self):
+        self.block_dir = ''
+        self.var = 'A'
+        self.script_dir= '/users/o/m/omyers/datasphere/ECproject/OurHMF/'
+        self.number_of = 10
+        self.start     = 0.0
+        self.stop      = 2.0
+        self.dt        = 0.05
+        self.cycles    = 150
+        self.N = 4
+        self.O_mega = 1.0
+        self.B = 1.0
+        # uncoment this when A is not the sweep
+        #self.A = ??
+
+        # Full trajectory or just Poincare sections
+        self.sliced = False
+        #self.sliced = True
+
+    def init_block(self):
+
+        # find the amount we want to increase the parameter by
+        inc_param = (self.stop-self.start)/self.number_of
+    
+        cur_var = self.start
+    
+        get_make_dir(self)
+        
+        # make info file
+        info_file = open(self.block_dir + '/info.txt','w')
+        info_file.write('dir: '+str(self.block_dir)) 
+        info_file.write('\ndt: '+str(self.dt))
+        if self.var == 'cycles': 
+            info_file.write('\ncycles (run time): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            info_file.write('\ncycles (run time): '+str(self.cycles))
+        if self.var == 'N': 
+            info_file.write('\nN (particle number): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            info_file.write('\nN (particle number): '+str(self.N))
+        if self.var == 'B': 
+            info_file.write('\nB (particle interaction strength): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nB (particle interaction strength): '+str(self.B))
+        if self.var == 'O_mega':
+            info_file.write('\nO_mega (natural f/driving f): sweep variable ' +str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nO_mega (natural f/driving f): '+str(self.O_mega))
+        if self.var == 'A': 
+            info_file.write('\nA (field amplidtude): sweep variable '+str(self.start)+'-'+str(self.stop))
+        else: 
+            if type(A)==float: 
+                info_file.write('\nA (interaction amplitude): '+str(self.A))
+            else: 
+                info_file.write('\nA (interaction amplitude): '+str(min(self.A))+'-'+str(max(self.A)))
+        info_file.close()
+
+        # The initial conditions
+        for l in range(self.number_of):
+            self.x0 = pl.zeros([2*self.N])
+           
+            # Start with initial velocity = 0.0
+            # each "position will be the "internal" position [0,2pi) (theta). The program handels the
+            # "actual" position (phi).
+            for i,j in enumerate(self.x0):
+                if i in range(self.N,2*self.N):
+                    print(i)
+                    self.x0[i] = random.random()*(2.0*pl.pi)
+                    continue
+
+            #make the file
+            cur_poin_file = open(self.block_dir+'/'+str(l)+'poindat.txt','w')
+    
+            #write the first few lines of the file
+            cur_poin_file.write(str(self.var)+' --> ' +str(cur_var)+'\n')
+            
+            # this just prints the numbers with one space imbetween. the .replace gets rid of the \n
+            # but i'm still not really sure why they are there in the first place.
+            cur_poin_file.write(str(self.x0)[1:-1].replace('\n',''))
+            cur_poin_file.write('\n')
+            
+            cur_poin_file.close()
+            cur_var += inc_param
+
+        # now that all the files are made make an "Orig" directory in the block directory to store
+        # the origonal blocks of initial conditions. This way if something goes wrong we can pull
+        # them out and run again.py again by hand
+        os.mkdir(self.block_dir + '/Orig')
+        os.system('cp ' + self.block_dir +'/*.txt ' + self.block_dir + '/Orig/')
+        os.system('scp -r ./' + self.block_dir + ' omyers@bluemoon-user2.uvm.edu:/users/o/m/omyers/Data/EC/2DBlock/Old/')
+        print 'self.block_dir'
+        print self.block_dir
+
+
 class SecSin1D(object):
     # N -> number of particles
     # number_of -> number of blocks (usualy 500). i.e. how many steps
@@ -503,11 +606,12 @@ class Sin1D(object):
         self.stop      = 1.0
         #self.stop      = 1.25 # for N=3 numcell=2
         self.dt        = 0.05
-        self.cycles    = 850
-        self.N = 8
+        #self.cycles    = 150
+        self.cycles    = 250
+        self.N = 10
         self.qq = 1.0
         self.beta = .6
-        self.num_cell = 1.0
+        self.num_cell = 5.0
         self.d = self.num_cell * 2.0 * pl.pi
         self.A = pl.zeros(2*self.N) +.5
 
@@ -973,6 +1077,9 @@ def main():
 
     to_run_file = open('to_run_'+key_word+'.txt','r')
      
+    if key_word == 'OurHMF':
+        to_run_object = OurHMF()
+
     if key_word == '1DEC':
         # pass the file so it can get all of the variables
         to_run_object = One_D_EC(to_run_file) 
