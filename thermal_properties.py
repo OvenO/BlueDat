@@ -499,8 +499,6 @@ def energy_fluctuation(ancl,keyword):
         for i,j in enumerate(ancl.list_dir):
             print('working with file ' + str(j))
             next_line = ''
-            if 'poindat.txt' not in j:
-                continue
             cur_file = open(j,'r')
             cur_sweep_var = float(cur_file.readline().split()[-1])
             cur_data=pl.genfromtxt(cur_file)

@@ -39,7 +39,9 @@ class anal_run():
             self.y_num_cell,\
             self.order,\
             self.sweep_str,\
-            self.Dim = get_system_info()
+            self.Dim,\
+            self.O_mega,\
+            self.system = get_system_info()
 
     # returns list of  poindat files if we are doing normal run otherwise...
     # The purpos of this function is to grab all the path names of all the files in different block
@@ -231,6 +233,10 @@ def center_orbit(sol,N,Dim):
 #***********************************************************************************************
 # this needs the dimesion of the system in question so it can interpret the file corectly
 def get_system_info():
+
+    # define a variable that can contain the type of system
+    system = 'not defined'
+
     print('getting system info')
     # depending on the variable we want we need a number that controles how we slice the data
     # lines. With the dimension of the system we can slice everything right. 
@@ -251,14 +257,16 @@ def get_system_info():
     info_f = open('info.txt','r')
     l = info_f.readlines()
 
-    looking_for=['qq','dt','beta','A ','cycles','particle number','x_num_cell','y_num_cell','order']
-    values =    [ 0.0, 0.0, 0.0  ,0.0, 0.0    , 0.0             , 0.0        , 0.0        , 0.0   ]
+    looking_for=['qq','dt:','beta','A ','cycles','particle number','x_num_cell','y_num_cell','order','O_mega']
+    values =    [ 0.0, 0.0, 0.0  ,0.0, 0.0    , 0.0             , 0.0        , 0.0        , 0.0   ,0.0]
     # make sure to type cast all of these right later (above)
 
     print('going into enumeration of info file')
     for i,j in enumerate(l):
         for a,b in enumerate(looking_for):
             if b in j:
+                if 'O_mega' in j:
+                    system = 'OurHMF'
                 if 'sweep' in j:
                     values[a] = 'sweep'
                 else:
@@ -276,6 +284,8 @@ def get_system_info():
     x_num_cell = values[6]
     y_num_cell = values[7]
     order      = values[8]
+    O_mega     = values[9]
+
     # type cast 
     if type(qq        ) != str: qq         = float(qq        )
     else: sweep_str = r'$q_i q_j$'
@@ -289,17 +299,20 @@ def get_system_info():
     else: sweep_str = '$Number of Cycles$'
     if type(N         ) != str: N          = int(  N         )
     else: sweep_str = r'$N$'
+    if type(O_mega    ) != str: O_mega     = float(O_mega    )
+    else: sweep_str = r'$\Omega$'
     if type(x_num_cell) != str: x_num_cell = int(  x_num_cell)
     if type(y_num_cell) != str: y_num_cell = int(  y_num_cell)
     if type(order     ) != str: order      = int(  order     )
     else: sweep_str = r'$O$'
 
-    print('qq is:' +str(qq))
+    print('qq is: ' +str(qq))
     print('dt is: '+str(dt))
     print('beta is: '+str(beta))
     print('A is: '+str(A))
     print('cycles is: '+str(cycles))
     print('N is: ' + str(N))
+    print('O_mega is: ' + str(O_mega))
     print('x_num_cell is: '+str(x_num_cell))
     print('y_num_cell is: '+str(y_num_cell))
     print('order is: '+str(order))
@@ -319,6 +332,7 @@ def get_system_info():
                 x_num_cell = int(float(j.split()[-1]))
 
     print('returning informatin')
+    
+    return qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim,O_mega,system
 
-    return qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim
 

@@ -14,7 +14,7 @@ class OurHMF(object):
     # cycles-> runtime cycles. 
     # O_mega -> intercharge force
     # A -> this is the interaction amplitude with the fild. 
-    # B -> particler particle interaction stregth
+    # qq -> particler particle interaction stregth
 
     def __init__(self):
         self.block_dir = ''
@@ -25,9 +25,10 @@ class OurHMF(object):
         self.stop      = 2.0
         self.dt        = 0.05
         self.cycles    = 150
-        self.N = 4
+        self.N = 10
         self.O_mega = 1.0
-        self.B = 1.0
+        self.qq = 1.0
+        self.beta = 0.0
         # uncoment this when A is not the sweep
         #self.A = ??
 
@@ -56,10 +57,10 @@ class OurHMF(object):
             info_file.write('\nN (particle number): sweep variable '+str(self.start)+'-'+str(self.stop))
         else: 
             info_file.write('\nN (particle number): '+str(self.N))
-        if self.var == 'B': 
-            info_file.write('\nB (particle interaction strength): sweep variable '+str(self.start)+'-'+str(self.stop))
+        if self.var == 'qq': 
+            info_file.write('\nqq (particle interaction strength): sweep variable '+str(self.start)+'-'+str(self.stop))
         else:
-            info_file.write('\nB (particle interaction strength): '+str(self.B))
+            info_file.write('\nqq (particle interaction strength): '+str(self.qq))
         if self.var == 'O_mega':
             info_file.write('\nO_mega (natural f/driving f): sweep variable ' +str(self.start)+'-'+str(self.stop))
         else:
@@ -71,6 +72,10 @@ class OurHMF(object):
                 info_file.write('\nA (interaction amplitude): '+str(self.A))
             else: 
                 info_file.write('\nA (interaction amplitude): '+str(min(self.A))+'-'+str(max(self.A)))
+        if self.var == 'beta':
+            info_file.write('\nbeta (damping): sweep variable ' + str(self.start)+'-'+str(self.stop))
+        else:
+            info_file.write('\nbeta (damping): ' + str(self.beta))
         info_file.close()
 
         # The initial conditions

@@ -99,7 +99,7 @@ def main():
     # plot type
     parser.add_argument('-t',action='store',dest = 't',type = str,required = True)
     # projection on to which axis
-    parser.add_argument('-p',action='store',dest = 'p',type = str,required = False)
+    parser.add_argument('-p',action='store',dest = 'p',type = str,required = False, default = 'xvx')
     # plot every image or everyother or ...
     # to plot evey image skip = 1. Skip cannot be less than 1 or else you get devide by zero
     # error in the moddulus.
@@ -111,8 +111,6 @@ def main():
     plot_type = inargs.t
     projection = inargs.p
     skip = inargs.s
-
-    'parsed arguments'
 
     # plot type
     if plot_type ==  'one':
@@ -155,7 +153,7 @@ def main():
 
     os.chdir(d)
 
-    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim = of.get_system_info()
+    qq,dt,beta,A,cycles,N,x_num_cell,y_num_cell,order,sweep_str,Dim,O_mega,system = of.get_system_info()
 
     if projection != None:
         x_lbl,y_lbl,x_rng,y_rng,ax_num = set_projection(projection,x_num_cell,y_num_cell,Dim)
