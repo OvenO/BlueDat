@@ -92,7 +92,7 @@ class anal_run():
 
             num_runs = 0
             for i,j in enumerate(all_dir):
-                if "poindat" in j:
+                if ("poindat" in j) and ('.gz' not in j):
                     list_dir.append(j)
                     num_runs+=1
             print('num_runs is: '+str(num_runs))

@@ -29,6 +29,10 @@ def main():
     ancl.get_info()
     ancl.set_list_dir()
 
+    # how many cycles do we want to get trow away as transients
+    # i.e. what do we think transients are
+    how_many_get_rid = 50 
+
     if plot_type == 'one':
         working_file = open(f,"r")
 
@@ -75,9 +79,10 @@ def main():
         
     # plot the velocity distribution for each file
     if plot_type == 'veldist':
-        os.mkdir('VelDistMovie')
-        # how many cycles do we want to get trow away as transients
-        how_many_get_rid = 50 
+        to_save_dir = 'VelDistMovie_neg100-neg50'
+        os.mkdir(to_save_dir)
+
+        cycle_int = int(2.0*pl.pi/ancl.dt)
         for i,j in enumerate(ancl.list_dir):
             working_file = open(j,'r')
             cur_sweep_var = float(working_file.readline().split()[-1])
@@ -85,7 +90,7 @@ def main():
             working_file.close()
             
             # get rid of transient cycles
-            cur_data = cur_data[50:,:]
+            cur_data = cur_data[-100*cycle_int:-50*cycle_int,:]
             # get one array of all the particles velocity maginudes
             theta_dot_arr = pl.array([])
             theta_dot_arr = pl.append(theta_dot_arr,cur_data[:,:ancl.N])
@@ -96,8 +101,39 @@ def main():
             ax.set_ylabel('Count',fontsize = 25)
             ax.hist(theta_dot_arr,bins = 20)
             fig.tight_layout()
-            fig.savefig('VelDistMovie/%(number)04d.png'%{'number':i})
+            fig.savefig(to_save_dir+'/%(number)04d.png'%{'number':i})
             pl.close(fig)
+    # x magnitism
+    # This may not be the right order parameter but I'm curious to see what this looks like. The
+    # details of why this is an order parameter in the HMF method are in "Nonequilibrium statistical
+    # mechanics of systems with long-range interactions" Physics reports, 2014.
+    if plot_type == 'mx':
+        #os.mkdir('MxMovie')
+        fig = pl.figure()
+        ax = fig.add_subplot(111)
+        ax.set_xlabel('Cycle',fontsize=30)
+        ax.set_ylabel(r'$M_x$',fontsize = 25)
+        for i,j in enumerate(ancl.list_dir):
+            working_file = open(j,'r')
+            cur_sweep_var = float(working_file.readline().split()[-1])
+            cur_data = pl.genfromtxt(working_file)
+            working_file.close()
+            
+            # get rid of transient cycles
+            cur_data = cur_data[how_many_get_rid:,:]
+            
+            # want to plot the magnitism as a function of time for like the last 10 cycles
+            # make an array of the average values at a given time for differnt values of time
+            theta_arr = pl.array([])
+            for a in range(int((10*2*pl.pi)/ancl.dt)):
+                theta_arr = pl.append(theta_arr,pl.cos(cur_data[-(a+1),ancl.N:]).sum()/ancl.N)
+    
+            ax.plot(pl.linspace(-10,0,int((10*2*pl.pi)/ancl.dt)),theta_arr)
+        fig.tight_layout()
+        #fig.savefig('MxMovie/%(number)04d.png'%{'number':i})
+        fig.savefig('mx.png')
+        pl.close(fig)
+
 
 if __name__ == '__main__':
     main()

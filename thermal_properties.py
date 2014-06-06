@@ -5,6 +5,8 @@ import argparse
 import o_funcs as of
 import scipy.constants as constants
 
+
+
 # cross corelation between adjacent particles.
 # See paper "Spatiotemporal oscillation patterns in the collective relaxation dynamics of
 # interacting particles in periodic potentials
@@ -484,7 +486,7 @@ def energy_fluctuation(ancl,keyword):
         # how much of soluton do we want to use? 1 -> all, 0 -> none
         # this can be bigger than in the unsliced ones becasue transients are more or less gone after
         # several PCs anyway.
-        how_much = .2
+        how_much = .5
 
         # See paper j. chem phys., vol 120, No 1, 1 Jan 2004
         # energy_stuff_1 and averages_1 do not asume that the velocites are independently

@@ -20,12 +20,12 @@ class OurHMF(object):
         self.block_dir = ''
         self.var = 'A'
         self.script_dir= '/users/o/m/omyers/datasphere/ECproject/OurHMF/'
-        self.number_of = 10
+        self.number_of = 100
         self.start     = 0.0
-        self.stop      = 2.0
+        self.stop      = .4
         self.dt        = 0.05
-        self.cycles    = 150
-        self.N = 10
+        self.cycles    = 500
+        self.N = 20
         self.O_mega = 1.0
         self.qq = 1.0
         self.beta = 0.0
@@ -85,10 +85,15 @@ class OurHMF(object):
             # Start with initial velocity = 0.0
             # each "position will be the "internal" position [0,2pi) (theta). The program handels the
             # "actual" position (phi).
+            # Right now the OurHMF model only suports motions about theta=0 or theta = pi. Lets
+            # start particles in the NEAR theta = 0
+            # define the range of placement [-bound,bound]. FULL RANGE WOULD BE bound=pl.pi
+            bound = pl.pi/8.0
             for i,j in enumerate(self.x0):
                 if i in range(self.N,2*self.N):
                     print(i)
-                    self.x0[i] = random.random()*(2.0*pl.pi)
+                    self.x0[i] = random.random()*(2.0*bound) - bound
+
                     continue
 
             #make the file
